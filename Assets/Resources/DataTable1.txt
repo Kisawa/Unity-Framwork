@@ -1,0 +1,3 @@
+#	DataTable1
+#	label	num
+	kisawa	13
