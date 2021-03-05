@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class SingleFgui : FguiUtility
+namespace Framwork
 {
+    public abstract class SingleFgui : FguiUtility
+    {
 
+    }
 }

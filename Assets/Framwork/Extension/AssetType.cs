@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum AssetType
+namespace Framwork
 {
+    public enum AssetType
+    {
 #if ADDRESSABLE
-    Resources,
-    Addressable
+        Resources,
+        Addressable
 #else
     Resources
 #endif
+    }
 }

@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class NoSingleFgui : FguiUtility
+namespace Framwork
 {
-    public void ShowSelf()
+    public abstract class NoSingleFgui : FguiUtility
     {
-        Show();
+        public void ShowSelf()
+        {
+            Show();
+        }
     }
 }

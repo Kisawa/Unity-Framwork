@@ -11,7 +11,7 @@ namespace ES3Types
 		public ES3ReflectedObjectType(Type type) : base(type)
 		{
             isReflectedType = true;
-			GetMembers(!ES3.UnsafeTypeList.Contains(type));
+			GetMembers(!Framwork.ES3.UnsafeTypeList.Contains(type));
 		}
 
 		protected override void WriteObject(object obj, ES3Writer writer)

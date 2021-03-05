@@ -33,7 +33,7 @@ namespace ES3Editor
 						file.Delete(); 
 					foreach (DirectoryInfo dir in di.GetDirectories())
 						dir.Delete(true);
-                    LocalSaveUtility.RefreshHasInjected();
+                    Framwork.LocalSaveUtility.RefreshHasInjected();
 				}
 			}
 

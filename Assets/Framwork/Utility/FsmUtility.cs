@@ -4,79 +4,84 @@ using UnityEngine;
 using System.Reflection;
 using System;
 
-public abstract class FsmUtility : MonoBehaviour
+namespace Framwork
 {
-    protected abstract IFsm StartFsm { get; }
-
-    public IFsm CurrentFsm { get; private set; }
-
-    public IFsm PreFsm { get; private set; }
-
-    Dictionary<Type, IFsm> fsms;
-
-    protected virtual void Awake()
+    public abstract class FsmUtility : MonoBehaviour
     {
-        fsms = new Dictionary<Type, IFsm>();
-        FieldInfo[] fields = GetType().GetFields(BindingFlags.Public|BindingFlags.Instance|BindingFlags.NonPublic);
-        for (int i = 0; i < fields.Length; i++)
+        protected abstract IFsm StartFsm { get; }
+
+        public IFsm CurrentFsm { get; private set; }
+
+        public IFsm PreFsm { get; private set; }
+
+        Dictionary<Type, IFsm> fsms;
+
+        protected virtual void Awake()
         {
-            Type type = fields[i].FieldType;
-            if (type.GetInterface("IFsm") != null)
+            fsms = new Dictionary<Type, IFsm>();
+            FieldInfo[] fields = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+            for (int i = 0; i < fields.Length; i++)
             {
-                if (type.GetConstructor(new Type[] { }) == null)
-                    Debug.LogError($"{GetType().Name}: FsmType of \"{type.Name}\" dont have default constructors.");
-                else
+                Type type = fields[i].FieldType;
+                if (type.GetInterface("IFsm") != null)
                 {
-                    if (fsms.ContainsKey(type)) {
-                        Debug.LogError($"{GetType().Name}: FsmType of \"{type.Name}\" has the same one.");
-                        continue;
+                    if (type.GetConstructor(new Type[] { }) == null)
+                        Debug.LogError($"{GetType().Name}: FsmType of \"{type.Name}\" dont have default constructors.");
+                    else
+                    {
+                        if (fsms.ContainsKey(type))
+                        {
+                            Debug.LogError($"{GetType().Name}: FsmType of \"{type.Name}\" has the same one.");
+                            continue;
+                        }
+                        object fsm = Activator.CreateInstance(type);
+                        fields[i].SetValue(this, fsm);
+                        fsms.Add(type, fsm as IFsm);
                     }
-                    object fsm = Activator.CreateInstance(type);
-                    fields[i].SetValue(this, fsm);
-                    fsms.Add(type, fsm as IFsm);
                 }
             }
         }
-    }
 
-    protected virtual void Start() {
-        if (fsms.Count > 0)
+        protected virtual void Start()
         {
-            foreach (IFsm item in fsms.Values)
-                item.Init(this);
-            if (StartFsm != null)
+            if (fsms.Count > 0)
             {
-                StartFsm.Enter();
-                CurrentFsm = StartFsm;
+                foreach (IFsm item in fsms.Values)
+                    item.Init(this);
+                if (StartFsm != null)
+                {
+                    StartFsm.Enter();
+                    CurrentFsm = StartFsm;
+                }
             }
         }
-    }
 
-    protected virtual void Update()
-    {
-        CurrentFsm?.Update();
-    }
-
-    protected virtual void FixedUpdate()
-    {
-        CurrentFsm?.FixedUpdate();
-    }
-
-    public void ChangeState<T>(object sender = null) where T : IFsm
-    {
-        Type type = typeof(T);
-        if (fsms.TryGetValue(type, out IFsm fsm))
+        protected virtual void Update()
         {
-            if (fsm == CurrentFsm)
-                return;
-            CurrentFsm?.Leave();
-            PreFsm = CurrentFsm;
-            CurrentFsm = fsms[type];
-            CurrentFsm.Enter(sender);
+            CurrentFsm?.Update();
         }
-        else
+
+        protected virtual void FixedUpdate()
         {
-            Debug.LogWarning($"{GetType().Name}: FsmType of \"{type.Name}\" dont inject.");
+            CurrentFsm?.FixedUpdate();
+        }
+
+        public void ChangeState<T>(object sender = null) where T : IFsm
+        {
+            Type type = typeof(T);
+            if (fsms.TryGetValue(type, out IFsm fsm))
+            {
+                if (fsm == CurrentFsm)
+                    return;
+                CurrentFsm?.Leave();
+                PreFsm = CurrentFsm;
+                CurrentFsm = fsms[type];
+                CurrentFsm.Enter(sender);
+            }
+            else
+            {
+                Debug.LogWarning($"{GetType().Name}: FsmType of \"{type.Name}\" dont inject.");
+            }
         }
     }
 }

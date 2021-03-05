@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface IReferencePool
+namespace Framwork
 {
-    void Recircle();
+    public interface IReferencePool
+    {
+        void Recircle();
+    }
 }

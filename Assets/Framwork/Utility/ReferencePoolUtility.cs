@@ -3,26 +3,31 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class ReferencePoolUtility
+namespace Framwork
 {
-    static Dictionary<Type, Queue<IReferencePool>> referencePool = new Dictionary<Type, Queue<IReferencePool>>();
+    public static class ReferencePoolUtility
+    {
+        static Dictionary<Type, Queue<IReferencePool>> referencePool = new Dictionary<Type, Queue<IReferencePool>>();
 
-    public static T Pop<T>() where T : class, IReferencePool, new() {
-        Type type = typeof(T);
-        if (referencePool.ContainsKey(type))
+        public static T Pop<T>() where T : class, IReferencePool, new()
         {
-            if (referencePool[type].Count > 0)
-                return referencePool[type].Dequeue() as T;
+            Type type = typeof(T);
+            if (referencePool.ContainsKey(type))
+            {
+                if (referencePool[type].Count > 0)
+                    return referencePool[type].Dequeue() as T;
+            }
+            T t = new T();
+            return t;
         }
-        T t = new T();
-        return t;
-    }
 
-    public static void Recircle<T>(T refer) where T : class, IReferencePool {
-        Type type = typeof(T);
-        refer.Recircle();
-        if (!referencePool.ContainsKey(type))
-            referencePool[type] = new Queue<IReferencePool>();
-        referencePool[type].Enqueue(refer);
+        public static void Recircle<T>(T refer) where T : class, IReferencePool
+        {
+            Type type = typeof(T);
+            refer.Recircle();
+            if (!referencePool.ContainsKey(type))
+                referencePool[type] = new Queue<IReferencePool>();
+            referencePool[type].Enqueue(refer);
+        }
     }
 }
