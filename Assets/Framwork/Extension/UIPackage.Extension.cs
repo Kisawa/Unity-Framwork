@@ -13,8 +13,9 @@ namespace FairyGUI {
     public partial class UIPackage
     {
 #if ADDRESSABLE
-        static Dictionary<string, AsyncOperationHandle> AsyncHandleDictionary = new Dictionary<string, AsyncOperationHandle>();
+        static Dictionary<string, AsyncOperationHandle> AddressableHandles = new Dictionary<string, AsyncOperationHandle>();
 #endif
+        static Dictionary<string, ResourceRequest> ResourceHandles = new Dictionary<string, ResourceRequest>();
         static Dictionary<string, int> ReferenceDictionary = new Dictionary<string, int>();
         static Dictionary<string, Action<UIPackage>> PackageCallbackList = new Dictionary<string, Action<UIPackage>>();
         int relyFileCount;
@@ -58,7 +59,7 @@ namespace FairyGUI {
             }
         }
 
-        public static GObject CreateFguiObject(string pkgName, string resName) 
+        public static GObject CreateFguiObject(string pkgName, string resName)
         {
             UIPackage pkg = GetByName(pkgName);
             if (pkg == null)
@@ -69,30 +70,42 @@ namespace FairyGUI {
             }
         }
 
-        public async static void AddPackageWithType(AssetType assetType, string assetName, Action<UIPackage> callback = null)
+        public static void AddPackageWithType(AssetType assetType, string assetName, Action<UIPackage> callback = null)
         {
             if (PackageCallbackList.ContainsKey(assetName)) {
                 Debug.LogWarning($"UIPackage.Extension: Dont call repeatedly while {assetName} has inited");
                 return;
             }
-            TextAsset asset = null;
             switch (assetType)
             {
                 case AssetType.Resources:
                     PackageCallbackList.Add(assetName, callback);
-                    asset = Resources.Load<TextAsset>($"FguiAssets/{assetName}_fui");
+                    ResourceRequest request = Resources.LoadAsync<TextAsset>($"FguiAssets/{assetName}_fui");
+                    request.completed += obj =>
+                    {
+                        ResourceHandles.Add(assetName, request);
+                        TextAsset asset = request.asset as TextAsset;
+                        addPackageWithType(assetType, asset, assetName);
+                    };
                     break;
 #if ADDRESSABLE
-                case AssetType.Addressable:
+                case AssetType.Addressables:
                     PackageCallbackList.Add(assetName, callback);
                     AsyncOperationHandle<TextAsset> asyncPackageLoad = Addressables.LoadAssetAsync<TextAsset>($"{assetName}_fui");
-                    await asyncPackageLoad.Task;
-                    AsyncHandleDictionary.Add(assetName, asyncPackageLoad);
-                    asset = asyncPackageLoad.Result as TextAsset;
+                    asyncPackageLoad.Completed += obj =>
+                    {
+                        AddressableHandles.Add(assetName, asyncPackageLoad);
+                        TextAsset asset = asyncPackageLoad.Result;
+                        addPackageWithType(assetType, asset, assetName);
+                    };
                     break;
 #endif
             }
-            if(asset == null)
+        }
+
+        static void addPackageWithType(AssetType assetType, TextAsset asset, string assetName)
+        {
+            if (asset == null)
                 throw new Exception("UIPackage.Extension: Cannot load ui package in '" + assetName + "'");
             ByteBuffer buffer = new ByteBuffer(asset.bytes);
             UIPackage pkg = new UIPackage();
@@ -181,24 +194,36 @@ namespace FairyGUI {
             }
         }
 
-        async void LoadAtlasWithType(AssetType assetType, PackageItem item)
+        void LoadAtlasWithType(AssetType assetType, PackageItem item)
         {
             string assetReferenceName = item.file.Substring(0, item.file.LastIndexOf('.'));
-            Texture tex = null;
             switch (assetType)
             {
                 case AssetType.Resources:
-                    tex = Resources.Load<Texture>($"FguiAssets/{assetReferenceName}");
+                    ResourceRequest request = Resources.LoadAsync<Texture>($"FguiAssets/{assetReferenceName}");
+                    request.completed += obj =>
+                    {
+                        ResourceHandles.Add(item.file, request);
+                        Texture tex = request.asset as Texture;
+                        loadAtlasWithType(tex, item);
+                    };
                     break;
 #if ADDRESSABLE
-                case AssetType.Addressable:
+                case AssetType.Addressables:
                     AsyncOperationHandle<Texture> asyncTextureLoad = Addressables.LoadAssetAsync<Texture>(assetReferenceName);
-                    await asyncTextureLoad.Task;
-                    AsyncHandleDictionary.Add(item.file, asyncTextureLoad);
-                    tex = asyncTextureLoad.Result as Texture;
+                    asyncTextureLoad.Completed += obj =>
+                    {
+                        AddressableHandles.Add(item.file, asyncTextureLoad);
+                        Texture tex = asyncTextureLoad.Result;
+                        loadAtlasWithType(tex, item);
+                    };
                     break;
 #endif
             }
+        }
+
+        void loadAtlasWithType(Texture tex, PackageItem item)
+        {
             Texture alphaTex = null;
             DestroyMethod dm = DestroyMethod.Unload;
             if (tex == null)
@@ -235,27 +260,36 @@ namespace FairyGUI {
             --RelyFileCount;
         }
 
-        async void LoadSoundWithType(AssetType assetType, PackageItem item)
+        void LoadSoundWithType(AssetType assetType, PackageItem item)
         {
-            DestroyMethod dm = DestroyMethod.Unload;
-            if (_resBundle != null)
-                dm = DestroyMethod.None;
-            AudioClip audioClip = null;
             string assetReferenceName = item.file.Substring(0, item.file.LastIndexOf('.'));
             switch (assetType)
             {
                 case AssetType.Resources:
-                    audioClip = Resources.Load<AudioClip>($"FguiAssets/{assetReferenceName}");
+                    ResourceRequest request = Resources.LoadAsync<AudioClip>($"FguiAssets/{assetReferenceName}");
+                    request.completed += obj =>
+                    {
+                        ResourceHandles.Add(item.file, request);
+                        AudioClip audioClip = request.asset as AudioClip;
+                        loadSoundWithType(audioClip, item);
+                    };
                     break;
 #if ADDRESSABLE
-                case AssetType.Addressable:
+                case AssetType.Addressables:
                     AsyncOperationHandle<AudioClip> asyncAudioLoad = Addressables.LoadAssetAsync<AudioClip>(assetReferenceName);
-                    await asyncAudioLoad.Task;
-                    AsyncHandleDictionary.Add(item.file, asyncAudioLoad);
-                    audioClip = asyncAudioLoad.Result as AudioClip;
+                    asyncAudioLoad.Completed += obj =>
+                    {
+                        AddressableHandles.Add(item.file, asyncAudioLoad);
+                        AudioClip audioClip = asyncAudioLoad.Result;
+                        loadSoundWithType(audioClip, item);
+                    };
                     break;
 #endif
             }
+        }
+
+        void loadSoundWithType(AudioClip audioClip, PackageItem item)
+        {
             if (audioClip == null)
                 Debug.LogWarning("UIPackage.Extension: AudioClip '" + item.file + "' not found in " + name);
             else
@@ -264,7 +298,7 @@ namespace FairyGUI {
                     item.audioClip = new NAudioClip(audioClip);
                 else
                     item.audioClip.Reload(audioClip);
-                item.audioClip.destroyMethod = dm;
+                item.audioClip.destroyMethod = DestroyMethod.Unload;
             }
             --RelyFileCount;
         }
@@ -288,22 +322,34 @@ namespace FairyGUI {
             if (ReferenceDictionary[key] <= 0)
             {
                 UIPackage pkg = GetByName(key);
-#if ADDRESSABLE
-                if (AsyncHandleDictionary.TryGetValue(key, out AsyncOperationHandle handle))
-                {
-                    Addressables.Release(AsyncHandleDictionary[key]);
-                    AsyncHandleDictionary.Remove(key);
-                }
                 var list = pkg._items.Where(x => x.file != null);
-                foreach (var item in list)
+                if (ResourceHandles.TryGetValue(key, out ResourceRequest request))
                 {
-                    if (AsyncHandleDictionary.TryGetValue(item.file, out AsyncOperationHandle _handle))
-                    {
-                        Addressables.Release(AsyncHandleDictionary[item.file]);
-                        AsyncHandleDictionary.Remove(item.file);
-                    }
+                    Resources.UnloadAsset(request.asset);
+                    ResourceHandles.Remove(key);
+                }
+#if ADDRESSABLE
+                if (AddressableHandles.TryGetValue(key, out AsyncOperationHandle handle))
+                {
+                    Addressables.Release(handle);
+                    AddressableHandles.Remove(key);
                 }
 #endif
+                foreach (var item in list)
+                {
+                    if (ResourceHandles.TryGetValue(item.file, out ResourceRequest _request))
+                    {
+                        Resources.UnloadAsset(_request.asset);
+                        ResourceHandles.Remove(item.file);
+                    }
+#if ADDRESSABLE
+                    if (AddressableHandles.TryGetValue(item.file, out AsyncOperationHandle _handle))
+                    {
+                        Addressables.Release(_handle);
+                        AddressableHandles.Remove(item.file);
+                    }
+#endif
+                }
                 RemovePackage(key);
                 PackageCallbackList.Remove(key);
                 ReferenceDictionary.Remove(key);
@@ -337,24 +383,36 @@ namespace FairyGUI {
                 else
                 {
                     UIPackage pkg = GetByName(packageName);
+                    var list = pkg._items.Where(x => x.file != null);
                     if (pkg != null)
                     {
-#if ADDRESSABLE
-                        if (AsyncHandleDictionary.TryGetValue(packageName, out AsyncOperationHandle handle))
+                        if (ResourceHandles.TryGetValue(packageName, out ResourceRequest request))
                         {
-                            Addressables.Release(AsyncHandleDictionary[packageName]);
-                            AsyncHandleDictionary.Remove(packageName);
+                            Resources.UnloadAsset(request.asset);
+                            ResourceHandles.Remove(packageName);
                         }
-                        var list = pkg._items.Where(x => x.file != null);
-                        foreach (var item in list)
+#if ADDRESSABLE
+                        if (AddressableHandles.TryGetValue(packageName, out AsyncOperationHandle handle))
                         {
-                            if (AsyncHandleDictionary.TryGetValue(item.file, out AsyncOperationHandle _handle))
-                            {
-                                Addressables.Release(AsyncHandleDictionary[item.file]);
-                                AsyncHandleDictionary.Remove(item.file);
-                            }
+                            Addressables.Release(handle);
+                            AddressableHandles.Remove(packageName);
                         }
 #endif
+                        foreach (var item in list)
+                        {
+                            if (ResourceHandles.TryGetValue(item.file, out ResourceRequest _request))
+                            {
+                                Resources.UnloadAsset(_request.asset);
+                                ResourceHandles.Remove(item.file);
+                            }
+#if ADDRESSABLE
+                            if (AddressableHandles.TryGetValue(item.file, out AsyncOperationHandle _handle))
+                            {
+                                Addressables.Release(_handle);
+                                AddressableHandles.Remove(item.file);
+                            }
+#endif
+                        }
                         RemovePackage(packageName);
                         PackageCallbackList.Remove(packageName);
                     }
@@ -365,10 +423,13 @@ namespace FairyGUI {
             }
             else
             {
+                foreach (var item in ResourceHandles.Values)
+                    Resources.UnloadAsset(item.asset);
+                ResourceHandles.Clear();
 #if ADDRESSABLE
-                foreach (var item in AsyncHandleDictionary.Values)
+                foreach (var item in AddressableHandles.Values)
                     Addressables.Release(item);
-                AsyncHandleDictionary.Clear();
+                AddressableHandles.Clear();
 #endif
                 RemoveAllPackages();
                 PackageCallbackList.Clear();

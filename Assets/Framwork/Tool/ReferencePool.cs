@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Framwork
 {
-    public static class ReferencePoolUtility
+    public static class ReferencePool
     {
         static Dictionary<Type, Queue<IReferencePool>> referencePool = new Dictionary<Type, Queue<IReferencePool>>();
 

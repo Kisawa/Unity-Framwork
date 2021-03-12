@@ -26,10 +26,7 @@ namespace Framwork
 
         public LocalSaveUtility() { }
 
-        protected virtual void Init()
-        {
-
-        }
+        protected virtual void Init() { }
 
         public void Refresh()
         {
@@ -40,27 +37,21 @@ namespace Framwork
 
         public static T GetLocalData<T>() where T : LocalSaveUtility, new()
         {
-            string typeName = typeof(T).Name;
-            if (DataInstanceDictionary.TryGetValue(typeName, out LocalSaveUtility obj))
-                return obj as T;
-            else
-                return null;
+            return Inject<T>();
         }
 
-        public static LocalSaveUtility InjectGetLocalData(Type type)
+        public static LocalSaveUtility GetLocalData(Type type)
         {
             if (!typeof(LocalSaveUtility).IsAssignableFrom(type) || !type.IsClass || type.IsAbstract)
                 return null;
-            string typeName = type.Name;
-            if (DataInstanceDictionary.TryGetValue(typeName, out LocalSaveUtility obj))
-            {
-                return obj;
-            }
+            string key = type.Name;
+            if (DataInstanceDictionary.TryGetValue(key, out LocalSaveUtility utility))
+                return utility;
             else
             {
                 MethodInfo method = typeof(LocalSaveUtility).GetMethod("Inject", BindingFlags.Public | BindingFlags.Static);
-                LocalSaveUtility localData = method.MakeGenericMethod(type).Invoke(null, null) as LocalSaveUtility;
-                return localData;
+                utility = method.MakeGenericMethod(type).Invoke(null, null) as LocalSaveUtility;
+                return utility;
             }
         }
 
@@ -80,29 +71,29 @@ namespace Framwork
 
         public static T Inject<T>() where T : LocalSaveUtility, new()
         {
-            T t = new T();
-            string typeName = typeof(T).Name;
-            if (DataInstanceDictionary.TryGetValue(typeName, out LocalSaveUtility obj))
+            string key = typeof(T).Name;
+            if (DataInstanceDictionary.TryGetValue(key, out LocalSaveUtility utility))
             {
-                Debug.LogWarning($"LocalSaveUtility: {typeName} has injected.");
-                return obj as T;
+                Debug.LogWarning($"LocalSaveUtility: {key} has injected.");
+                return utility as T;
             }
             else
             {
+                T t = new T();
                 Inject(t);
                 DataInstanceDictionary.Add(t.GetType().Name, t);
                 return t;
             }
         }
 
-        public static void InjectAll(Action<LocalSaveUtility> injectSingleLocalDataCallback = null, string[] ignoreTypeName = null)
+        public static void InjectAll(Action<LocalSaveUtility> injectSingleLocalDataCallback = null, string[] ignoreTypeNames = null)
         {
             MethodInfo method = typeof(LocalSaveUtility).GetMethod("Inject", BindingFlags.NonPublic | BindingFlags.Static);
             ES3Reader reader = ES3.StartLoad();
             for (int i = 0; i < AllLocalSaveTypes.Length; i++)
             {
                 Type item = AllLocalSaveTypes[i];
-                if (ignoreTypeName == null || !ignoreTypeName.Contains(item.Name))
+                if (ignoreTypeNames == null || !ignoreTypeNames.Contains(item.Name))
                 {
                     if (DataInstanceDictionary.ContainsKey(item.Name))
                         Debug.LogWarning($"LocalSaveUtility: {item.Name} has injected.");

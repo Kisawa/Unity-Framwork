@@ -8,7 +8,7 @@ namespace Framwork
     {
 #if ADDRESSABLE
         Resources,
-        Addressable
+        Addressables
 #else
     Resources
 #endif

@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7d8a37d8f5d5318468a9d0bbb5e19c4d, type: 3}
-  m_Name: Configuration
+  m_Name: FguiConfiguration
   m_EditorClassIdentifier: 
   FguiDesignScreenSize: {x: 1080, y: 1920}
   FguiFontAssetName: 
   FguiAssetType: 0
-  CommonPackName: 
+  CommonPackName: CommonPack
   LanguageAssetName: 

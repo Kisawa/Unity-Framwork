@@ -270,7 +270,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 23
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -341,44 +341,77 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FguiConfiguration: {fileID: 11400000, guid: 1f56bd82fc6b651419b46b94c9c1c3c6, type: 2}
   useFgui: 0
-  mainUITypeFullName: 
+  enterUITypeFullName: MainUI
+  selectSingleFguiMask: 0
+  selectNoSingleFguiMask: -1
   fguiConfigLoadCallback:
     m_PersistentCalls:
       m_Calls: []
-  mainUIShowCallback:
+  enterUIShowCallback:
     m_PersistentCalls:
       m_Calls: []
-  loadDataTable: 1
+  loadDataTable: 0
   dataTableIsNull: 0
-  ignoreDataTableTypeName: []
+  ignoreDataTableTypeNames: []
   loadSingleDataTableCallback:
     m_PersistentCalls:
       m_Calls: []
   loadAllDataTableCallback:
     m_PersistentCalls:
       m_Calls: []
-  loadJsonData: 1
+  loadJsonData: 0
   jsonDataIsNull: 0
-  ignoreJsonDataTypeName: []
+  ignoreJsonDataTypeNames: []
   loadSingleJsonDataCallback:
     m_PersistentCalls:
       m_Calls: []
   loadAllJsonDataCallback:
     m_PersistentCalls:
-      m_Calls: []
-  injectLocalData: 1
+      m_Calls:
+      - m_Target: {fileID: 1926217309}
+        m_MethodName: callback
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  injectLocalData: 0
   localDataIsNull: 0
-  ignoreLocalDataTypeName: []
+  ignoreLocalDataTypeNames: []
   injectSingleLocalDataCallback:
     m_PersistentCalls:
       m_Calls: []
   injectAllLocalDataCallback:
     m_PersistentCalls:
       m_Calls: []
-  framworkReadyCallback:
+  loadAsset: 1
+  assetUtilityIsNull: 0
+  ignoreAssetUtilityTypeNames: []
+  loadSingleAssetUtilityCallback:
     m_PersistentCalls:
       m_Calls: []
-  runTimeSequence: 0100000002000000
+  loadAllAssetUtilityCallback:
+    m_PersistentCalls:
+      m_Calls: []
+  framworkReadyCallback:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1926217309}
+        m_MethodName: callback
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  runTimeSequence: 00000000
 --- !u!1 &1766639585
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,7 +478,7 @@ MonoBehaviour:
   openReferences: 0
   openPrefabs: 0
   idRef:
-    _Keys: 60529611e894654debde8b809c70d47f8b51087c5bc9654a509c8ba613fadd17906618702251cf6b460c1e1908674268b92d688127c06b6912b39e7bdff49e1a435ceefd76bb5e232173c367e77f5316a7dc12196da30f30faaf5d6eb3538b5293fb2a5387bb0e02
+    _Keys: 60529611e894654debde8b809c70d47f8b51087c5bc9654a509c8ba613fadd17906618702251cf6b460c1e1908674268b92d688127c06b6912b39e7bdff49e1a435ceefd76bb5e232173c367e77f5316a7dc12196da30f30faaf5d6eb3538b5293fb2a5387bb0e020639b13837adf076d2be55c10862380887737b370d59345c8680922885b12f06a0ac0c16cad22a1dc92b9f4bd9607a66b5f50f51566a70468344e02b3748526379c72213c35bf662f8ae9253861ac846
     _Values:
     - {fileID: 1361615533}
     - {fileID: 1361615532}
@@ -460,6 +493,16 @@ MonoBehaviour:
     - {fileID: 705507995}
     - {fileID: 705507994}
     - {fileID: 963194227}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 8924938277568755927, guid: 7e158eb5cc610ce46ad0827c42e5f048, type: 3}
+    - {fileID: 8158056682270385627, guid: 7e158eb5cc610ce46ad0827c42e5f048, type: 3}
+    - {fileID: 11500000, guid: ea0b61658efb6d94cab835612db48abe, type: 3}
+    - {fileID: 1926217309}
+    - {fileID: 1926217308}
+    - {fileID: 1926217310}
   prefabs: []
 --- !u!114 &1766639588
 MonoBehaviour:
@@ -493,4 +536,47 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1926217308
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1926217310}
+  - component: {fileID: 1926217309}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1926217309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926217308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea0b61658efb6d94cab835612db48abe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1926217310
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926217308}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

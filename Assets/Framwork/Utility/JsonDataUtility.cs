@@ -19,52 +19,80 @@ namespace Framwork
         public abstract string JsonAssetName { get; }
 
 #if ADDRESSABLE
-        protected virtual AssetType AssetType { get => AssetType.Addressable; }
+        public virtual AssetType AssetType { get => AssetType.Addressables; }
 #else
-    protected virtual AssetType AssetType { get => AssetType.Resources; }
+        public virtual AssetType AssetType { get => AssetType.Resources; }
 #endif
 
         public JsonDataUntility() { }
 
-        public virtual void StartInject()
-        {
+        protected virtual void StartInject() { }
 
+        protected virtual void EndInject() { }
+
+        public void Load(Action<JsonDataUntility> callback = null)
+        {
+            switch (AssetType)
+            {
+                case AssetType.Resources:
+                    {
+                        ResourceRequest resourceRequest = Resources.LoadAsync<TextAsset>(JsonAssetName);
+                        resourceRequest.completed += obj =>
+                        {
+                            TextAsset txt = resourceRequest.asset as TextAsset;
+                            StartInject();
+                            inject(txt.text);
+                            EndInject();
+                            Resources.UnloadAsset(resourceRequest.asset);
+                            callback?.Invoke(this);
+                        };
+                        break;
+                    }
+#if ADDRESSABLE
+                case AssetType.Addressables:
+                    {
+                        AsyncOperationHandle<TextAsset> asyncTextAssetLoad = Addressables.LoadAssetAsync<TextAsset>(JsonAssetName);
+                        asyncTextAssetLoad.Completed += obj =>
+                        {
+                            StartInject();
+                            inject(asyncTextAssetLoad.Result.text);
+                            EndInject();
+                            Addressables.Release(asyncTextAssetLoad);
+                            callback?.Invoke(this);
+                        };
+                        break;
+                    }
+#endif
+            }
         }
 
-        protected virtual void EndInject()
+        public static T GetJsonData<T>() where T : JsonDataUntility
         {
-
-        }
-
-        public static T GetJsonData<T>() where T : JsonDataUntility, new()
-        {
-            T t = new T();
-            if (JsonDataDictionary.TryGetValue(typeof(T).Name, out JsonDataUntility data))
-            {
-                t = data as T;
-                return t;
-            }
-            else
-            {
-                return null;
-            }
+            JsonDataDictionary.TryGetValue(typeof(T).Name, out JsonDataUntility utility);
+            return utility as T;
         }
 
         public static void LoadJsonData<T>(Action<T> callback = null) where T : JsonDataUntility, new()
         {
-            T t = new T();
             string key = typeof(T).Name;
-            if (JsonDataDictionary.TryGetValue(key, out JsonDataUntility obj))
+            if (JsonDataDictionary.TryGetValue(key, out JsonDataUntility utility))
+            {
+                callback?.Invoke(utility as T);
                 Debug.LogWarning($"JsonDataUtility: {typeof(T).Name} has loaded.");
+            }
             else
-                LoadJsonData(t, callback);
+            {
+                T t = new T();
+                t.Load(callback as Action<JsonDataUntility>);
+                JsonDataDictionary.Add(key, t);
+            }
         }
 
-        public static void LoadAllJsonData(Action<JsonDataUntility> jsonDataCallback = null, Action endLoadCallback = null, string[] ignoreTypeName = null)
+        public static void LoadAllJsonData(Action<JsonDataUntility> jsonDataCallback = null, Action endLoadCallback = null, string[] ignoreTypeNames = null)
         {
             Type[] types = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(x => x.GetTypes().Where(y => typeof(JsonDataUntility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
-            MethodInfo method = typeof(JsonDataUntility).GetMethod("LoadJsonData");
+            MethodInfo method = typeof(JsonDataUntility).GetMethod("LoadJsonData", BindingFlags.Public | BindingFlags.Static);
             int typeLength = types.Length + 1;
             Action<JsonDataUntility> callback = (obj) =>
             {
@@ -75,47 +103,12 @@ namespace Framwork
             };
             for (int i = 0; i < types.Length; i++)
             {
-                if (ignoreTypeName == null || !ignoreTypeName.Contains(types[i].Name))
+                if (ignoreTypeNames == null || !ignoreTypeNames.Contains(types[i].Name))
                     method.MakeGenericMethod(types[i]).Invoke(null, new object[] { callback });
                 else
                     typeLength--;
             }
             callback.Invoke(null);
-        }
-
-        static async void LoadJsonData<T>(T data, Action<T> callback = null) where T : JsonDataUntility
-        {
-            switch (data.AssetType)
-            {
-                case AssetType.Resources:
-                    {
-                        TextAsset txt = Resources.Load<TextAsset>(data.JsonAssetName);
-                        data.StartInject();
-                        data.inject(txt.text);
-                        data.EndInject();
-                        string key = data.GetType().Name;
-                        if (!JsonDataDictionary.ContainsKey(key))
-                            JsonDataDictionary.Add(key, data);
-                        callback?.Invoke(data);
-                        break;
-                    }
-#if ADDRESSABLE
-                case AssetType.Addressable:
-                    {
-                        AsyncOperationHandle<TextAsset> asyncTextAssetLoad = Addressables.LoadAssetAsync<TextAsset>(data.JsonAssetName);
-                        await asyncTextAssetLoad.Task;
-                        data.StartInject();
-                        data.inject(asyncTextAssetLoad.Result.text);
-                        data.EndInject();
-                        string key = data.GetType().Name;
-                        if (!JsonDataDictionary.ContainsKey(key))
-                            JsonDataDictionary.Add(key, data);
-                        callback?.Invoke(data);
-                        Addressables.Release(asyncTextAssetLoad);
-                        break;
-                    }
-#endif
-            }
         }
 
         void inject(string jsonText)

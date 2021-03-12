@@ -17,12 +17,17 @@ namespace Framwork
         SerializedProperty loadDataTableProp;
         SerializedProperty loadJsonDataProp;
         SerializedProperty injectLocalDataProp;
+        SerializedProperty loadAssetProp;
         SerializedProperty dataTableIsNullProp;
         SerializedProperty jsonDataIsNullProp;
         SerializedProperty localDataIsNullProp;
-        SerializedProperty ignoreDataTableTypeNameProp;
-        SerializedProperty ignoreJsonDataTypeNameProp;
-        SerializedProperty ignoreLocalDataTypeNameProp;
+        SerializedProperty assetUtilityIsNullProp;
+        SerializedProperty selectSingleFguiMaskProp;
+        SerializedProperty selectNoSingleFguiMaskProp;
+        SerializedProperty ignoreDataTableTypeNamesProp;
+        SerializedProperty ignoreJsonDataTypeNamesProp;
+        SerializedProperty ignoreLocalDataTypeNamesProp;
+        SerializedProperty ignoreAssetUtilityTypeNamesProp;
         SerializedProperty fguiConfigLoadCallbackProp;
         SerializedProperty mainUITypeFullNameProp;
         SerializedProperty mainUIShowCallbackProp;
@@ -32,18 +37,23 @@ namespace Framwork
         SerializedProperty loadAllJsonDataCallbackProp;
         SerializedProperty injectSingleLocalDataCallbackProp;
         SerializedProperty injectAllLocalDataCallbackProp;
+        SerializedProperty loadSingleAssetUtilityCallbackProp;
+        SerializedProperty loadAllAssetUtilityCallbackProp;
         SerializedProperty framworkReadyCallbackProp;
         SerializedProperty runTimeSequenceProp;
         ReorderableList runTimeSequenceList;
-        string[] singleFguiTypeName;
-        string[] singleFguiFullTypeName;
+        string[] singleFguiTypeNamesWithNone;
+        string[] singleFguiFullTypeNamesWithNone;
+        string[] singleFguiTypeNames;
+        string[] noSingleFguiTypeNames;
         string[] dataTableTypeNames;
         string[] dataTableNames;
         string[] jsonDataTypeNames;
         string[] jsonDataNames;
         string[] localDataTypeNames;
         Type[] localDataTypes;
-        bool[] unfoldLocalDataView;
+        string[] assetUtilityTypeNames;
+        AssetData[] assetUtilityDatas;
         Dictionary<string, ReorderableList> listDic;
         Dictionary<string, bool> viewDic;
         Dictionary<string, object> objCacheDic;
@@ -58,6 +68,7 @@ namespace Framwork
         GUIContent unfoldContent;
         GUIContent addContent;
         GUIContent subContent;
+        GUIContent deleteContent;
         MethodInfo dynamicArrayAddInfo;
         MethodInfo dynamicArrayRemoveInfo;
         MethodInfo getKeysFromDictionaryInfo;
@@ -75,21 +86,28 @@ namespace Framwork
             loadDataTableProp = serializedObject.FindProperty("loadDataTable");
             loadJsonDataProp = serializedObject.FindProperty("loadJsonData");
             injectLocalDataProp = serializedObject.FindProperty("injectLocalData");
+            loadAssetProp = serializedObject.FindProperty("loadAsset");
             dataTableIsNullProp = serializedObject.FindProperty("dataTableIsNull");
             jsonDataIsNullProp = serializedObject.FindProperty("jsonDataIsNull");
             localDataIsNullProp = serializedObject.FindProperty("localDataIsNull");
-            ignoreDataTableTypeNameProp = serializedObject.FindProperty("ignoreDataTableTypeName");
-            ignoreJsonDataTypeNameProp = serializedObject.FindProperty("ignoreJsonDataTypeName");
-            ignoreLocalDataTypeNameProp = serializedObject.FindProperty("ignoreLocalDataTypeName");
+            assetUtilityIsNullProp = serializedObject.FindProperty("assetUtilityIsNull");
+            selectSingleFguiMaskProp = serializedObject.FindProperty("selectSingleFguiMask");
+            selectNoSingleFguiMaskProp = serializedObject.FindProperty("selectNoSingleFguiMask");
+            ignoreDataTableTypeNamesProp = serializedObject.FindProperty("ignoreDataTableTypeNames");
+            ignoreJsonDataTypeNamesProp = serializedObject.FindProperty("ignoreJsonDataTypeNames");
+            ignoreLocalDataTypeNamesProp = serializedObject.FindProperty("ignoreLocalDataTypeNames");
+            ignoreAssetUtilityTypeNamesProp = serializedObject.FindProperty("ignoreAssetUtilityTypeNames");
             fguiConfigLoadCallbackProp = serializedObject.FindProperty("fguiConfigLoadCallback");
-            mainUITypeFullNameProp = serializedObject.FindProperty("mainUITypeFullName");
-            mainUIShowCallbackProp = serializedObject.FindProperty("mainUIShowCallback");
+            mainUITypeFullNameProp = serializedObject.FindProperty("enterUITypeFullName");
+            mainUIShowCallbackProp = serializedObject.FindProperty("enterUIShowCallback");
             loadSingleDataTableCallbackProp = serializedObject.FindProperty("loadSingleDataTableCallback");
             loadAllDataTableCallbackProp = serializedObject.FindProperty("loadAllDataTableCallback");
             loadSingleJsonDataCallbackProp = serializedObject.FindProperty("loadSingleJsonDataCallback");
             loadAllJsonDataCallbackProp = serializedObject.FindProperty("loadAllJsonDataCallback");
             injectSingleLocalDataCallbackProp = serializedObject.FindProperty("injectSingleLocalDataCallback");
             injectAllLocalDataCallbackProp = serializedObject.FindProperty("injectAllLocalDataCallback");
+            loadSingleAssetUtilityCallbackProp = serializedObject.FindProperty("loadSingleAssetUtilityCallback");
+            loadAllAssetUtilityCallbackProp = serializedObject.FindProperty("loadAllAssetUtilityCallback");
             framworkReadyCallbackProp = serializedObject.FindProperty("framworkReadyCallback");
             runTimeSequenceProp = serializedObject.FindProperty("runTimeSequence");
             toggleContent = EditorGUIUtility.IconContent("ol toggle act");
@@ -100,6 +118,7 @@ namespace Framwork
             unfoldContent = EditorGUIUtility.IconContent("IN foldout on");
             addContent = EditorGUIUtility.IconContent("d_Toolbar Plus");
             subContent = EditorGUIUtility.IconContent("d_Toolbar Minus");
+            deleteContent = EditorGUIUtility.IconContent("ol minus act");
             List<string> layerNames = new List<string>();
             for (int i = 0; i < 32; i++)
             {
@@ -124,85 +143,7 @@ namespace Framwork
             addDictionaryValueInfo = type.GetMethod("addDictionaryValue", BindingFlags.NonPublic | BindingFlags.Static);
             removeKeyFromDictionaryInfo = type.GetMethod("removeKeyFromDictionary", BindingFlags.NonPublic | BindingFlags.Static);
 
-            serializedObject.Update();
-            Type[] singleFguiTypes = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(x => x.GetTypes().Where(y => typeof(SingleFgui).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
-            singleFguiTypeName = new string[singleFguiTypes.Length + 1];
-            singleFguiFullTypeName = new string[singleFguiTypes.Length + 1];
-            singleFguiTypeName[0] = "None";
-            for (int i = 0; i < singleFguiTypes.Length; i++)
-            {
-                Type singleFguiType = singleFguiTypes[i];
-                singleFguiTypeName[i + 1] = singleFguiType.Name;
-                singleFguiFullTypeName[i + 1] = singleFguiType.FullName;
-            }
-
-            Type[] dataTableTypes = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(x => x.GetTypes().Where(y => typeof(DataTableUtility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
-            dataTableTypeNames = new string[dataTableTypes.Length];
-            dataTableNames = new string[dataTableTypes.Length];
-            for (int i = 0; i < dataTableTypes.Length; i++)
-            {
-                Type item = dataTableTypes[i];
-                DataTableUtility dataTable = (DataTableUtility)Activator.CreateInstance(item);
-                string assetType = item.GetProperty("AssetType", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(dataTable).ToString();
-                dataTableTypeNames[i] = dataTableTypes[i].Name;
-                dataTableNames[i] = $"{dataTable.TableAssetName}  [{assetType}]";
-            }
-            dataTableIsNullProp.boolValue = dataTableTypes.Length == 0;
-            for (int i = 0; i < ignoreDataTableTypeNameProp.arraySize; i++)
-            {
-                string select = ignoreDataTableTypeNameProp.GetArrayElementAtIndex(i).stringValue;
-                if (!dataTableTypeNames.Contains(select))
-                {
-                    ignoreDataTableTypeNameProp.DeleteArrayElementAtIndex(i);
-                    i--;
-                }
-            }
-
-            Type[] jsonDataTypes = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(x => x.GetTypes().Where(y => typeof(JsonDataUntility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
-            jsonDataTypeNames = new string[jsonDataTypes.Length];
-            jsonDataNames = new string[jsonDataTypes.Length];
-            for (int i = 0; i < jsonDataTypes.Length; i++)
-            {
-                Type item = jsonDataTypes[i];
-                JsonDataUntility jsonData = (JsonDataUntility)Activator.CreateInstance(item);
-                string assetType = item.GetProperty("AssetType", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(jsonData).ToString();
-                jsonDataTypeNames[i] = jsonDataTypes[i].Name;
-                jsonDataNames[i] = $"{jsonData.JsonAssetName}  [{assetType}]";
-            }
-            jsonDataIsNullProp.boolValue = jsonDataTypes.Length == 0;
-            for (int i = 0; i < ignoreJsonDataTypeNameProp.arraySize; i++)
-            {
-                string select = ignoreJsonDataTypeNameProp.GetArrayElementAtIndex(i).stringValue;
-                if (!jsonDataTypeNames.Contains(select))
-                {
-                    ignoreJsonDataTypeNameProp.DeleteArrayElementAtIndex(i);
-                    i--;
-                }
-            }
-
-            localDataTypes = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(x => x.GetTypes().Where(y => typeof(LocalSaveUtility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
-            localDataTypeNames = new string[localDataTypes.Length];
-            unfoldLocalDataView = new bool[localDataTypes.Length];
-            for (int i = 0; i < localDataTypes.Length; i++)
-            {
-                LocalSaveUtility dataTable = (LocalSaveUtility)Activator.CreateInstance(localDataTypes[i]);
-                localDataTypeNames[i] = localDataTypes[i].Name;
-            }
-            localDataIsNullProp.boolValue = localDataTypes.Length == 0;
-            for (int i = 0; i < ignoreLocalDataTypeNameProp.arraySize; i++)
-            {
-                string select = ignoreLocalDataTypeNameProp.GetArrayElementAtIndex(i).stringValue;
-                if (!localDataTypeNames.Contains(select))
-                {
-                    ignoreLocalDataTypeNameProp.DeleteArrayElementAtIndex(i);
-                    i--;
-                }
-            }
-            serializedObject.ApplyModifiedProperties();
+            initType();
         }
 
         public override void OnInspectorGUI()
@@ -229,10 +170,13 @@ namespace Framwork
             EditorGUILayout.Space();
             localDataDrawer(labelStyle);
             EditorGUILayout.Space();
+            assetUtilityDrawer(labelStyle);
             EditorGUILayout.Space();
             EditorGUILayout.Space();
             EditorGUILayout.Space();
-            GUILayout.Label("", "IN Title");
+            EditorGUILayout.Space();
+            GUILayout.Label("", "RL DragHandle", GUILayout.Width(EditorGUIUtility.currentViewWidth));
+            EditorGUILayout.Space();
             checkRunTimeSequenceList();
             runTimeSequenceList.DoLayoutList();
             EditorGUILayout.PropertyField(framworkReadyCallbackProp);
@@ -250,11 +194,18 @@ namespace Framwork
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            if (GUILayout.Button(useFguiProp.boolValue ? toggleOnContent : toggleContent, "AboutWIndowLicenseLabel") || GUILayout.Button("Use Fgui:", "IN Title"))
+            if (GUILayout.Button(useFguiProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Use Fgui:", "IN TitleText", GUILayout.Width(150)))
+            {
                 useFguiProp.boolValue = !useFguiProp.boolValue;
+                viewDic["UseFguiBox"] = true;
+            }
+            if (!viewDic.TryGetValue("UseFguiBox", out bool view))
+                viewDic.Add("UseFguiBox", true);
+            if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
+                viewDic["UseFguiBox"] = !view;
             EditorGUILayout.EndHorizontal();
 
-            if (useFguiProp.boolValue)
+            if (view && useFguiProp.boolValue)
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(20);
@@ -288,14 +239,38 @@ namespace Framwork
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.BeginHorizontal();
-                GUIContent mainUIContent = new GUIContent("MainUI:", "Game enter ui");
+                GUIContent mainUIContent = new GUIContent("EnterUI:", "Game enter ui");
                 EditorGUILayout.LabelField(mainUIContent, labelStyle, GUILayout.Width(150));
                 string selectTypeFullName = mainUITypeFullNameProp.stringValue;
-                int index = Array.IndexOf(singleFguiFullTypeName, selectTypeFullName);
+                int index = Array.IndexOf(singleFguiFullTypeNamesWithNone, selectTypeFullName);
                 if (index == -1) index = 0;
-                index = EditorGUILayout.Popup(index, singleFguiTypeName, GUILayout.MinWidth(150));
-                mainUITypeFullNameProp.stringValue = singleFguiFullTypeName[index];
+                index = EditorGUILayout.Popup(index, singleFguiTypeNamesWithNone, GUILayout.MinWidth(150));
+                mainUITypeFullNameProp.stringValue = singleFguiFullTypeNamesWithNone[index];
                 EditorGUILayout.LabelField(configuration.LanguageAssetName, labelStyle);
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("LoadUI Select:", labelStyle, GUILayout.Width(150));
+                EditorGUILayout.LabelField("Single UI:", labelStyle, GUILayout.Width(65));
+                if (singleFguiTypeNames.Length == 0)
+                {
+                    selectSingleFguiMaskProp.intValue = 0;
+                    EditorGUILayout.Popup(selectSingleFguiMaskProp.intValue, new string[] { "None" }, GUILayout.Width(150));
+                }
+                else
+                    selectSingleFguiMaskProp.intValue = EditorGUILayout.MaskField(selectSingleFguiMaskProp.intValue, singleFguiTypeNames, GUILayout.Width(150));
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(140);
+                EditorGUILayout.LabelField("No Single UI:", labelStyle, GUILayout.Width(80));
+                if (noSingleFguiTypeNames.Length == 0)
+                {
+                    selectNoSingleFguiMaskProp.intValue = 0;
+                    EditorGUILayout.Popup(selectNoSingleFguiMaskProp.intValue, new string[] { "None" }, GUILayout.Width(150));
+                }
+                else
+                    selectNoSingleFguiMaskProp.intValue = EditorGUILayout.MaskField(selectNoSingleFguiMaskProp.intValue, noSingleFguiTypeNames, GUILayout.Width(150));
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.EndVertical();
@@ -320,11 +295,18 @@ namespace Framwork
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            if (GUILayout.Button(loadDataTableProp.boolValue ? toggleOnContent : toggleContent, "AboutWIndowLicenseLabel") || GUILayout.Button("Load DataTable:", "IN Title"))
+            if (GUILayout.Button(loadDataTableProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Load DataTable:", "IN TitleText", GUILayout.Width(150)))
+            {
                 loadDataTableProp.boolValue = !loadDataTableProp.boolValue;
+                viewDic["LoadDataTableBox"] = true;
+            }
+            if (!viewDic.TryGetValue("LoadDataTableBox", out bool view))
+                viewDic.Add("LoadDataTableBox", true);
+            if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
+                viewDic["LoadDataTableBox"] = !view;
             EditorGUILayout.EndHorizontal();
 
-            if (loadDataTableProp.boolValue)
+            if (view && loadDataTableProp.boolValue)
             {
                 if (!dataTableIsNullProp.boolValue)
                 {
@@ -340,9 +322,9 @@ namespace Framwork
                         typeContent.text = $"{typeName}:";
                         assetContent.text = dataTableNames[i].ToString();
                         int index = -1;
-                        for (int j = 0; j < ignoreDataTableTypeNameProp.arraySize; j++)
+                        for (int j = 0; j < ignoreDataTableTypeNamesProp.arraySize; j++)
                         {
-                            if (ignoreDataTableTypeNameProp.GetArrayElementAtIndex(j).stringValue == typeName)
+                            if (ignoreDataTableTypeNamesProp.GetArrayElementAtIndex(j).stringValue == typeName)
                             {
                                 index = j;
                                 break;
@@ -357,14 +339,14 @@ namespace Framwork
                         {
                             if (index == -1)
                             {
-                                ignoreDataTableTypeNameProp.InsertArrayElementAtIndex(ignoreDataTableTypeNameProp.arraySize);
-                                ignoreDataTableTypeNameProp.GetArrayElementAtIndex(ignoreDataTableTypeNameProp.arraySize - 1).stringValue = typeName;
+                                ignoreDataTableTypeNamesProp.InsertArrayElementAtIndex(ignoreDataTableTypeNamesProp.arraySize);
+                                ignoreDataTableTypeNamesProp.GetArrayElementAtIndex(ignoreDataTableTypeNamesProp.arraySize - 1).stringValue = typeName;
                             }
                         }
                         else
                         {
                             if (index > -1)
-                                ignoreDataTableTypeNameProp.DeleteArrayElementAtIndex(index);
+                                ignoreDataTableTypeNamesProp.DeleteArrayElementAtIndex(index);
                         }
                         EditorGUILayout.EndHorizontal();
                     }
@@ -398,11 +380,18 @@ namespace Framwork
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            if (GUILayout.Button(loadJsonDataProp.boolValue ? toggleOnContent : toggleContent, "AboutWIndowLicenseLabel") || GUILayout.Button("Load JsonData:", "IN Title"))
+            if (GUILayout.Button(loadJsonDataProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Load JsonData:", "IN TitleText", GUILayout.Width(150)))
+            {
                 loadJsonDataProp.boolValue = !loadJsonDataProp.boolValue;
+                viewDic["LoadJsonDataBox"] = true;
+            }
+            if (!viewDic.TryGetValue("LoadJsonDataBox", out bool view))
+                viewDic.Add("LoadJsonDataBox", true);
+            if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
+                viewDic["LoadJsonDataBox"] = !view;
             EditorGUILayout.EndHorizontal();
 
-            if (loadJsonDataProp.boolValue)
+            if (view && loadJsonDataProp.boolValue)
             {
                 if (!jsonDataIsNullProp.boolValue)
                 {
@@ -418,9 +407,9 @@ namespace Framwork
                         typeContent.text = $"{typeName}:";
                         assetContent.text = jsonDataNames[i].ToString();
                         int index = -1;
-                        for (int j = 0; j < ignoreJsonDataTypeNameProp.arraySize; j++)
+                        for (int j = 0; j < ignoreJsonDataTypeNamesProp.arraySize; j++)
                         {
-                            if (ignoreJsonDataTypeNameProp.GetArrayElementAtIndex(j).stringValue == typeName)
+                            if (ignoreJsonDataTypeNamesProp.GetArrayElementAtIndex(j).stringValue == typeName)
                             {
                                 index = j;
                                 break;
@@ -435,14 +424,14 @@ namespace Framwork
                         {
                             if (index == -1)
                             {
-                                ignoreJsonDataTypeNameProp.InsertArrayElementAtIndex(ignoreJsonDataTypeNameProp.arraySize);
-                                ignoreJsonDataTypeNameProp.GetArrayElementAtIndex(ignoreJsonDataTypeNameProp.arraySize - 1).stringValue = typeName;
+                                ignoreJsonDataTypeNamesProp.InsertArrayElementAtIndex(ignoreJsonDataTypeNamesProp.arraySize);
+                                ignoreJsonDataTypeNamesProp.GetArrayElementAtIndex(ignoreJsonDataTypeNamesProp.arraySize - 1).stringValue = typeName;
                             }
                         }
                         else
                         {
                             if (index > -1)
-                                ignoreJsonDataTypeNameProp.DeleteArrayElementAtIndex(index);
+                                ignoreJsonDataTypeNamesProp.DeleteArrayElementAtIndex(index);
                         }
                         EditorGUILayout.EndHorizontal();
                     }
@@ -476,11 +465,18 @@ namespace Framwork
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(20);
-            if (GUILayout.Button(injectLocalDataProp.boolValue ? toggleOnContent : toggleContent, "AboutWIndowLicenseLabel") || GUILayout.Button("Inject LocalData:", "IN Title"))
+            if (GUILayout.Button(injectLocalDataProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Inject LocalData:", "IN TitleText", GUILayout.Width(150)))
+            {
                 injectLocalDataProp.boolValue = !injectLocalDataProp.boolValue;
+                viewDic["InjectLocalDataBox"] = true;
+            }
+            if (!viewDic.TryGetValue("InjectLocalDataBox", out bool view))
+                viewDic.Add("InjectLocalDataBox", true);
+            if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
+                viewDic["InjectLocalDataBox"] = !view;
             EditorGUILayout.EndHorizontal();
 
-            if (injectLocalDataProp.boolValue)
+            if (view && injectLocalDataProp.boolValue)
             {
                 if (!localDataIsNullProp.boolValue)
                 {
@@ -494,9 +490,9 @@ namespace Framwork
                         string typeName = localDataTypeNames[i];
                         typeContent.text = localDataTypeNames[i].ToString();
                         int index = -1;
-                        for (int j = 0; j < ignoreLocalDataTypeNameProp.arraySize; j++)
+                        for (int j = 0; j < ignoreLocalDataTypeNamesProp.arraySize; j++)
                         {
-                            if (ignoreLocalDataTypeNameProp.GetArrayElementAtIndex(j).stringValue == typeName)
+                            if (ignoreLocalDataTypeNamesProp.GetArrayElementAtIndex(j).stringValue == typeName)
                             {
                                 index = j;
                                 break;
@@ -510,23 +506,26 @@ namespace Framwork
                         {
                             if (index == -1)
                             {
-                                ignoreLocalDataTypeNameProp.InsertArrayElementAtIndex(ignoreLocalDataTypeNameProp.arraySize);
-                                ignoreLocalDataTypeNameProp.GetArrayElementAtIndex(ignoreLocalDataTypeNameProp.arraySize - 1).stringValue = typeName;
+                                ignoreLocalDataTypeNamesProp.InsertArrayElementAtIndex(ignoreLocalDataTypeNamesProp.arraySize);
+                                ignoreLocalDataTypeNamesProp.GetArrayElementAtIndex(ignoreLocalDataTypeNamesProp.arraySize - 1).stringValue = typeName;
                             }
                         }
                         else
                         {
                             if (index > -1)
-                                ignoreLocalDataTypeNameProp.DeleteArrayElementAtIndex(index);
+                                ignoreLocalDataTypeNamesProp.DeleteArrayElementAtIndex(index);
                         }
-                        if (GUILayout.Button(unfoldLocalDataView[i] ? unfoldContent : foldContent, "AboutWIndowLicenseLabel"))
-                            unfoldLocalDataView[i] = !unfoldLocalDataView[i];
+                        string typeKey = $"LocalData-{typeName}";
+                        if (!viewDic.TryGetValue(typeKey, out bool typeView))
+                            viewDic.Add(typeKey, false);
+                        if (GUILayout.Button(typeView ? unfoldContent : foldContent, "AboutWIndowLicenseLabel"))
+                            viewDic[typeKey] = !typeView;
                         EditorGUILayout.EndHorizontal();
 
-                        if (unfoldLocalDataView[i])
+                        if (typeView)
                         {
                             Type type = localDataTypes[i];
-                            LocalSaveUtility data = LocalSaveUtility.InjectGetLocalData(type);
+                            LocalSaveUtility data = LocalSaveUtility.GetLocalData(type);
                             FieldInfo[] fieldInfos = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
                             for (int j = 0; j < fieldInfos.Length; j++)
                             {
@@ -552,6 +551,106 @@ namespace Framwork
                     EditorGUILayout.BeginHorizontal();
                     GUILayout.Space(50);
                     EditorGUILayout.PropertyField(injectAllLocalDataCallbackProp);
+                    EditorGUILayout.EndHorizontal();
+                }
+                else
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(20);
+                    EditorGUILayout.BeginVertical("ColorPickerSliderBackground");
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Null", labelStyle, GUILayout.Width(150));
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+        }
+
+        void assetUtilityDrawer(GUIStyle labelStyle)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(20);
+            if (GUILayout.Button(loadAssetProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Load Asset:", "IN TitleText", GUILayout.Width(150)))
+            {
+                loadAssetProp.boolValue = !loadAssetProp.boolValue;
+                viewDic["LoadAssetBox"] = true;
+            }
+            if (!viewDic.TryGetValue("LoadAssetBox", out bool view))
+                viewDic.Add("LoadAssetBox", true);
+            if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
+                viewDic["LoadAssetBox"] = !view;
+            EditorGUILayout.EndHorizontal();
+
+            if (view && loadAssetProp.boolValue)
+            {
+                if (!assetUtilityIsNullProp.boolValue)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(20);
+                    EditorGUILayout.BeginVertical("ColorPickerSliderBackground");
+                    GUIContent typeContent = new GUIContent("", "Class name");
+                    for (int i = 0; i < assetUtilityTypeNames.Length; i++)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        string typeName = assetUtilityTypeNames[i];
+                        typeContent.text = typeName;
+                        int index = -1;
+                        for (int j = 0; j < ignoreAssetUtilityTypeNamesProp.arraySize; j++)
+                        {
+                            if (ignoreAssetUtilityTypeNamesProp.GetArrayElementAtIndex(j).stringValue == typeName)
+                            {
+                                index = j;
+                                break;
+                            }
+                        }
+                        bool ignore = index > -1;
+                        if (GUILayout.Button(ignore ? emptyBoxContent : boxContent, "AboutWIndowLicenseLabel", GUILayout.Width(10)))
+                            ignore = !ignore;
+                        if (ignore)
+                        {
+                            if (index == -1)
+                            {
+                                ignoreAssetUtilityTypeNamesProp.InsertArrayElementAtIndex(ignoreAssetUtilityTypeNamesProp.arraySize);
+                                ignoreAssetUtilityTypeNamesProp.GetArrayElementAtIndex(ignoreAssetUtilityTypeNamesProp.arraySize - 1).stringValue = typeName;
+                            }
+                        }
+                        else
+                        {
+                            if (index > -1)
+                                ignoreAssetUtilityTypeNamesProp.DeleteArrayElementAtIndex(index);
+                        }
+                        EditorGUILayout.LabelField(typeContent, labelStyle, GUILayout.Width(150));
+                        string typeKey = $"AssetUtility-{typeName}";
+                        if (!viewDic.TryGetValue(typeKey, out bool typeView))
+                            viewDic.Add(typeKey, false);
+                        if (GUILayout.Button(typeView ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
+                            viewDic[typeKey] = !typeView;
+                        EditorGUILayout.EndHorizontal();
+                        if (typeView)
+                        {
+                            for (int j = 0; j < assetUtilityDatas[i].Names.Length; j++)
+                            {
+                                AssetData data = assetUtilityDatas[i];
+                                EditorGUILayout.BeginHorizontal();
+                                GUILayout.Space(30);
+                                string name = data.Names[j];
+                                EditorGUILayout.LabelField($"{data.Types[j].Name}  {name}", GUILayout.Width(175));
+                                EditorGUILayout.LabelField(data.Paths[j]);
+                                EditorGUILayout.EndHorizontal();
+                            }
+                        }
+                    }
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
+
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(50);
+                    EditorGUILayout.PropertyField(loadSingleAssetUtilityCallbackProp);
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Space(50);
+                    EditorGUILayout.PropertyField(loadAllAssetUtilityCallbackProp);
                     EditorGUILayout.EndHorizontal();
                 }
                 else
@@ -740,7 +839,7 @@ namespace Framwork
                                 viewDic.Add(key_name, keyView);
                             EditorGUILayout.BeginHorizontal();
                             GUILayout.Space(10);
-                            if (GUILayout.Button("", "ToggleMixed", GUILayout.Width(15)))
+                            if (GUILayout.Button(deleteContent, "AboutWIndowLicenseLabel", GUILayout.Width(15)))
                             {
                                 if ((bool)removeKeyFromDictionaryInfo.MakeGenericMethod(new Type[] { keyType, valType }).Invoke(null, new object[] { obj, key }))
                                     continue;
@@ -955,94 +1054,6 @@ namespace Framwork
             }
         }
 
-        object valDrawer(Rect rect, object value, Type type, ref float line)
-        {
-            rect.height = 17;
-            line = 20;
-            if (type == typeof(string))
-            {
-                if (value == null)
-                    value = "";
-                return EditorGUI.TextField(rect, (string)value);
-            }
-            else if (type == typeof(int))
-                return EditorGUI.IntField(rect, (int)value);
-            else if (type == typeof(long))
-                return EditorGUI.LongField(rect, (long)value);
-            else if (type == typeof(float))
-                return EditorGUI.FloatField(rect, (float)value);
-            else if (type == typeof(double))
-                return EditorGUI.DoubleField(rect, (double)value);
-            else if (type == typeof(bool))
-                return EditorGUI.Toggle(rect, (bool)value);
-            else if (type == typeof(Vector2))
-                return EditorGUI.Vector2Field(rect, "", (Vector2)value);
-            else if (type == typeof(Vector2Int))
-                return EditorGUI.Vector2IntField(rect, "", (Vector2Int)value);
-            else if (type == typeof(Vector3))
-                return EditorGUI.Vector3Field(rect, "", (Vector3)value);
-            else if (type == typeof(Vector3Int))
-                return EditorGUI.Vector3IntField(rect, "", (Vector3Int)value);
-            else if (type == typeof(Vector4))
-                return EditorGUI.Vector4Field(rect, "", (Vector4)value);
-            else if (type == typeof(Quaternion))
-            {
-                Quaternion quaternion = (Quaternion)value;
-                Vector4 val = new Vector4(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
-                val = EditorGUI.Vector4Field(rect, "", val);
-                quaternion.x = val.x;
-                quaternion.y = val.y;
-                quaternion.z = val.z;
-                quaternion.w = val.w;
-                return quaternion;
-            }
-            else if (type == typeof(Color))
-                return EditorGUI.ColorField(rect, (Color)value);
-            else if (type == typeof(Bounds))
-            {
-                line = 35;
-                return EditorGUI.BoundsField(rect, (Bounds)value);
-            }
-            else if (type == typeof(BoundsInt))
-            {
-                line = 35;
-                return EditorGUI.BoundsIntField(rect, (BoundsInt)value);
-            }
-            else if (type == typeof(LayerMask))
-                return (LayerMask)EditorGUI.MaskField(rect, (LayerMask)value, layerMaskNames);
-            else if (type == typeof(Rect))
-            {
-                line = 35;
-                return EditorGUI.RectField(rect, (Rect)value);
-            }
-            else if (type == typeof(RectInt))
-            {
-                line = 35;
-                return EditorGUI.RectIntField(rect, (RectInt)value);
-            }
-            else if (type.IsEnum)
-                return EditorGUI.EnumPopup(rect, (Enum)value);
-            else if (type == typeof(AnimationCurve))
-            {
-                AnimationCurve curve = (AnimationCurve)value;
-                if (curve == null)
-                    curve = new AnimationCurve();
-                return EditorGUI.CurveField(rect, curve);
-            }
-            else if (type == typeof(Gradient))
-            {
-                Gradient gradient = (Gradient)value;
-                if (gradient == null)
-                    gradient = new Gradient();
-                return EditorGUI.GradientField(rect, gradient);
-            }
-            else
-            {
-                line = 0;
-                return null;
-            }
-        }
-
         object listElementDrawer(Rect rect, object value, Type type, string key, ref float line, bool parentIsIList = true)
         {
             rect.height = 17;
@@ -1249,7 +1260,7 @@ namespace Framwork
                             rect.x = rect_x;
                             rect.y += 20;
                             rect.width = 15;
-                            if (GUI.Button(rect, "", "ToggleMixed"))
+                            if (GUI.Button(rect, deleteContent, "AboutWIndowLicenseLabel"))
                             {
                                 if ((bool)removeKeyFromDictionaryInfo.MakeGenericMethod(new Type[] { keyType, valType }).Invoke(null, new object[] { value, _key }))
                                     continue;
@@ -1471,6 +1482,94 @@ namespace Framwork
             }
         }
 
+        object valDrawer(Rect rect, object value, Type type, ref float line)
+        {
+            rect.height = 17;
+            line = 20;
+            if (type == typeof(string))
+            {
+                if (value == null)
+                    value = "";
+                return EditorGUI.TextField(rect, (string)value);
+            }
+            else if (type == typeof(int))
+                return EditorGUI.IntField(rect, (int)value);
+            else if (type == typeof(long))
+                return EditorGUI.LongField(rect, (long)value);
+            else if (type == typeof(float))
+                return EditorGUI.FloatField(rect, (float)value);
+            else if (type == typeof(double))
+                return EditorGUI.DoubleField(rect, (double)value);
+            else if (type == typeof(bool))
+                return EditorGUI.Toggle(rect, (bool)value);
+            else if (type == typeof(Vector2))
+                return EditorGUI.Vector2Field(rect, "", (Vector2)value);
+            else if (type == typeof(Vector2Int))
+                return EditorGUI.Vector2IntField(rect, "", (Vector2Int)value);
+            else if (type == typeof(Vector3))
+                return EditorGUI.Vector3Field(rect, "", (Vector3)value);
+            else if (type == typeof(Vector3Int))
+                return EditorGUI.Vector3IntField(rect, "", (Vector3Int)value);
+            else if (type == typeof(Vector4))
+                return EditorGUI.Vector4Field(rect, "", (Vector4)value);
+            else if (type == typeof(Quaternion))
+            {
+                Quaternion quaternion = (Quaternion)value;
+                Vector4 val = new Vector4(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+                val = EditorGUI.Vector4Field(rect, "", val);
+                quaternion.x = val.x;
+                quaternion.y = val.y;
+                quaternion.z = val.z;
+                quaternion.w = val.w;
+                return quaternion;
+            }
+            else if (type == typeof(Color))
+                return EditorGUI.ColorField(rect, (Color)value);
+            else if (type == typeof(Bounds))
+            {
+                line = 35;
+                return EditorGUI.BoundsField(rect, (Bounds)value);
+            }
+            else if (type == typeof(BoundsInt))
+            {
+                line = 35;
+                return EditorGUI.BoundsIntField(rect, (BoundsInt)value);
+            }
+            else if (type == typeof(LayerMask))
+                return (LayerMask)EditorGUI.MaskField(rect, (LayerMask)value, layerMaskNames);
+            else if (type == typeof(Rect))
+            {
+                line = 35;
+                return EditorGUI.RectField(rect, (Rect)value);
+            }
+            else if (type == typeof(RectInt))
+            {
+                line = 35;
+                return EditorGUI.RectIntField(rect, (RectInt)value);
+            }
+            else if (type.IsEnum)
+                return EditorGUI.EnumPopup(rect, (Enum)value);
+            else if (type == typeof(AnimationCurve))
+            {
+                AnimationCurve curve = (AnimationCurve)value;
+                if (curve == null)
+                    curve = new AnimationCurve();
+                return EditorGUI.CurveField(rect, curve);
+            }
+            else if (type == typeof(Gradient))
+            {
+                Gradient gradient = (Gradient)value;
+                if (gradient == null)
+                    gradient = new Gradient();
+                return EditorGUI.GradientField(rect, gradient);
+            }
+            else
+            {
+                line = 0;
+                return null;
+            }
+        }
+
         void listCallback(string key, ReorderableList reorderableList, Type elementType)
         {
             string typeName = getTypeName(elementType);
@@ -1636,25 +1735,172 @@ namespace Framwork
             return name;
         }
 
+        void initType()
+        {
+            serializedObject.Update();
+            Type[] singleFguiTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes().Where(y => typeof(SingleFgui).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
+            singleFguiTypeNamesWithNone = new string[singleFguiTypes.Length + 1];
+            singleFguiFullTypeNamesWithNone = new string[singleFguiTypes.Length + 1];
+            singleFguiTypeNames = new string[singleFguiTypes.Length];
+            singleFguiTypeNamesWithNone[0] = "None";
+            for (int i = 0; i < singleFguiTypes.Length; i++)
+            {
+                Type singleFguiType = singleFguiTypes[i];
+                singleFguiTypeNamesWithNone[i + 1] = singleFguiType.Name;
+                singleFguiFullTypeNamesWithNone[i + 1] = singleFguiType.FullName;
+                singleFguiTypeNames[i] = singleFguiType.Name;
+            }
+            Type[] noSingleFguiTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes().Where(y => typeof(NoSingleFgui).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
+            noSingleFguiTypeNames = new string[noSingleFguiTypes.Length];
+            for (int i = 0; i < noSingleFguiTypes.Length; i++)
+                noSingleFguiTypeNames[i] = noSingleFguiTypes[i].Name;
+
+
+            Type[] dataTableTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes().Where(y => typeof(DataTableUtility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
+            dataTableTypeNames = new string[dataTableTypes.Length];
+            dataTableNames = new string[dataTableTypes.Length];
+            for (int i = 0; i < dataTableTypes.Length; i++)
+            {
+                Type item = dataTableTypes[i];
+                DataTableUtility dataTable = (DataTableUtility)Activator.CreateInstance(item);
+                string assetType = item.GetProperty("AssetType", BindingFlags.Instance | BindingFlags.Public).GetValue(dataTable).ToString();
+                dataTableTypeNames[i] = dataTableTypes[i].Name;
+                dataTableNames[i] = $"{dataTable.TableAssetName}  [{assetType}]";
+            }
+            dataTableIsNullProp.boolValue = dataTableTypes.Length == 0;
+            for (int i = 0; i < ignoreDataTableTypeNamesProp.arraySize; i++)
+            {
+                string select = ignoreDataTableTypeNamesProp.GetArrayElementAtIndex(i).stringValue;
+                if (!dataTableTypeNames.Contains(select))
+                {
+                    ignoreDataTableTypeNamesProp.DeleteArrayElementAtIndex(i);
+                    i--;
+                }
+            }
+
+            Type[] jsonDataTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes().Where(y => typeof(JsonDataUntility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
+            jsonDataTypeNames = new string[jsonDataTypes.Length];
+            jsonDataNames = new string[jsonDataTypes.Length];
+            for (int i = 0; i < jsonDataTypes.Length; i++)
+            {
+                Type item = jsonDataTypes[i];
+                JsonDataUntility jsonData = (JsonDataUntility)Activator.CreateInstance(item);
+                string assetType = item.GetProperty("AssetType", BindingFlags.Instance | BindingFlags.Public).GetValue(jsonData).ToString();
+                jsonDataTypeNames[i] = jsonDataTypes[i].Name;
+                jsonDataNames[i] = $"{jsonData.JsonAssetName}  [{assetType}]";
+            }
+            jsonDataIsNullProp.boolValue = jsonDataTypes.Length == 0;
+            for (int i = 0; i < ignoreJsonDataTypeNamesProp.arraySize; i++)
+            {
+                string select = ignoreJsonDataTypeNamesProp.GetArrayElementAtIndex(i).stringValue;
+                if (!jsonDataTypeNames.Contains(select))
+                {
+                    ignoreJsonDataTypeNamesProp.DeleteArrayElementAtIndex(i);
+                    i--;
+                }
+            }
+
+            localDataTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes().Where(y => typeof(LocalSaveUtility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
+            localDataTypeNames = new string[localDataTypes.Length];
+            for (int i = 0; i < localDataTypes.Length; i++)
+            {
+                LocalSaveUtility dataTable = (LocalSaveUtility)Activator.CreateInstance(localDataTypes[i]);
+                localDataTypeNames[i] = localDataTypes[i].Name;
+            }
+            localDataIsNullProp.boolValue = localDataTypes.Length == 0;
+            for (int i = 0; i < ignoreLocalDataTypeNamesProp.arraySize; i++)
+            {
+                string select = ignoreLocalDataTypeNamesProp.GetArrayElementAtIndex(i).stringValue;
+                if (!localDataTypeNames.Contains(select))
+                {
+                    ignoreLocalDataTypeNamesProp.DeleteArrayElementAtIndex(i);
+                    i--;
+                }
+            }
+
+            Type[] assetUtilityTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes().Where(y => typeof(AssetUtility).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
+            assetUtilityTypeNames = new string[assetUtilityTypes.Length];
+            assetUtilityDatas = new AssetData[assetUtilityTypes.Length];
+            List<string> datas = new List<string>();
+            for (int i = 0; i < assetUtilityTypes.Length; i++)
+            {
+                Type item = assetUtilityTypes[i];
+                assetUtilityTypeNames[i] = item.Name;
+                List<string> names = new List<string>();
+                List<Type> types = new List<Type>();
+                List<string> paths = new List<string>();
+                FieldInfo[] fields = item.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                for (int j = 0; j < fields.Length; j++)
+                {
+                    FieldInfo field = fields[j];
+                    if (field.IsLiteral || (!typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType) && field.FieldType != typeof(ObjectPool)))
+                        continue;
+                    if (field.IsDefined(typeof(ResourceAttribute), true))
+                    {
+                        ResourceAttribute attribute = field.GetCustomAttribute(typeof(ResourceAttribute), true) as ResourceAttribute;
+                        names.Add(field.Name);
+                        types.Add(field.FieldType);
+                        paths.Add($"[Resources: { attribute.Path}]");
+                    }
+                    if (field.IsDefined(typeof(AddressableAttribute), true))
+                    {
+                        AddressableAttribute attribute = field.GetCustomAttribute(typeof(AddressableAttribute), true) as AddressableAttribute;
+                        names.Add(field.Name);
+                        types.Add(field.FieldType);
+                        paths.Add($"[Addressables: { attribute.Path}]");
+                    }
+                }
+                assetUtilityDatas[i] = new AssetData(names, types, paths);
+            }
+            assetUtilityIsNullProp.boolValue = assetUtilityTypes.Length == 0;
+            for (int i = 0; i < ignoreAssetUtilityTypeNamesProp.arraySize; i++)
+            {
+                string select = ignoreAssetUtilityTypeNamesProp.GetArrayElementAtIndex(i).stringValue;
+                if (!assetUtilityTypeNames.Contains(select))
+                {
+                    ignoreAssetUtilityTypeNamesProp.DeleteArrayElementAtIndex(i);
+                    i--;
+                }
+            }
+            serializedObject.ApplyModifiedProperties();
+        }
+
         void checkRunTimeSequenceList()
         {
+            bool noOther = true;
             for (int i = 0; i < runTimeSequenceProp.arraySize; i++)
             {
                 int enumIndex = runTimeSequenceProp.GetArrayElementAtIndex(i).enumValueIndex;
                 bool res = false;
-                if (enumIndex == 0 && (!loadDataTableProp.boolValue || dataTableIsNullProp.boolValue))
+                if (enumIndex == 0)
+                    noOther = false;
+                if (enumIndex == 1 && (!useFguiProp.boolValue || framworkEntry.FguiConfiguration == null))
                     res = true;
-                if (enumIndex == 1 && (!loadJsonDataProp.boolValue || jsonDataIsNullProp.boolValue))
+                if (enumIndex == 2 && (!loadDataTableProp.boolValue || dataTableIsNullProp.boolValue))
                     res = true;
-                if (enumIndex == 2 && (!injectLocalDataProp.boolValue || localDataIsNullProp.boolValue))
+                if (enumIndex == 3 && (!loadJsonDataProp.boolValue || jsonDataIsNullProp.boolValue))
                     res = true;
-                if (enumIndex == 3 && (!useFguiProp.boolValue || framworkEntry.FguiConfiguration == null))
+                if (enumIndex == 4 && (!injectLocalDataProp.boolValue || localDataIsNullProp.boolValue))
+                    res = true;
+                if (enumIndex == 5 && (!loadAssetProp.boolValue || assetUtilityIsNullProp.boolValue))
                     res = true;
                 if (res)
                 {
                     runTimeSequenceProp.DeleteArrayElementAtIndex(i);
                     i--;
                 }
+            }
+            if (noOther)
+            {
+                runTimeSequenceProp.InsertArrayElementAtIndex(runTimeSequenceProp.arraySize);
+                SerializedProperty str = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceProp.arraySize - 1);
+                str.enumValueIndex = 0;
             }
             if (runTimeSequenceList == null)
             {
@@ -1668,6 +1914,11 @@ namespace Framwork
                     SerializedProperty property = runTimeSequenceProp.GetArrayElementAtIndex(index);
                     EditorGUI.LabelField(rect, property.enumNames[property.enumValueIndex].ToString());
                 };
+                runTimeSequenceList.onCanRemoveCallback = list =>
+                {
+                    int enumIndex = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceList.index).enumValueIndex;
+                    return enumIndex != 0;
+                };
                 runTimeSequenceList.onAddDropdownCallback = (rect, list) =>
                 {
                     serializedObject.Update();
@@ -1676,46 +1927,29 @@ namespace Framwork
                     bool fguiRes = false;
                     bool dataTableRes = false;
                     bool jsonDataRes = false;
-                    bool localSaveDataRes = false;
+                    bool localDataRes = false;
+                    bool assetRes = false;
                     for (int i = 0; i < runTimeSequenceProp.arraySize; i++)
                     {
                         int typeIndex = runTimeSequenceProp.GetArrayElementAtIndex(i).enumValueIndex;
-                        if (typeIndex == 0)
-                            dataTableRes = true;
-                        else if (typeIndex == 1)
-                            jsonDataRes = true;
-                        else if (typeIndex == 2)
-                            localSaveDataRes = true;
-                        else if (typeIndex == 3)
+                        if (typeIndex == 1)
                             fguiRes = true;
+                        else if (typeIndex == 2)
+                            dataTableRes = true;
+                        else if (typeIndex == 3)
+                            jsonDataRes = true;
+                        else if (typeIndex == 4)
+                            localDataRes = true;
+                        else if (typeIndex == 5)
+                            assetRes = true;
                     }
-                    if (loadDataTableProp.boolValue && !dataTableIsNullProp.boolValue)
+                    if (useFguiProp.boolValue && framworkEntry.FguiConfiguration != null)
                     {
-                        if (dataTableRes)
-                        {
-                            menu.AddDisabledItem(new GUIContent("DataTable"));
-                        }
+                        if (fguiRes)
+                            menu.AddDisabledItem(new GUIContent("Fgui"));
                         else
                         {
-                            menu.AddItem(new GUIContent("DataTable"), false, () =>
-                            {
-                                runTimeSequenceProp.InsertArrayElementAtIndex(runTimeSequenceProp.arraySize);
-                                SerializedProperty str = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceProp.arraySize - 1);
-                                str.enumValueIndex = 0;
-                                serializedObject.ApplyModifiedProperties();
-                            });
-                        }
-                        isNull = false;
-                    }
-                    if (loadJsonDataProp.boolValue && !jsonDataIsNullProp.boolValue)
-                    {
-                        if (jsonDataRes)
-                        {
-                            menu.AddDisabledItem(new GUIContent("JsonData"));
-                        }
-                        else
-                        {
-                            menu.AddItem(new GUIContent("JsonData"), false, () =>
+                            menu.AddItem(new GUIContent("Fgui"), false, () =>
                             {
                                 runTimeSequenceProp.InsertArrayElementAtIndex(runTimeSequenceProp.arraySize);
                                 SerializedProperty str = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceProp.arraySize - 1);
@@ -1725,15 +1959,13 @@ namespace Framwork
                         }
                         isNull = false;
                     }
-                    if (injectLocalDataProp.boolValue && !localDataIsNullProp.boolValue)
+                    if (loadDataTableProp.boolValue && !dataTableIsNullProp.boolValue)
                     {
-                        if (localSaveDataRes)
-                        {
-                            menu.AddDisabledItem(new GUIContent("LocalData"));
-                        }
+                        if (dataTableRes)
+                            menu.AddDisabledItem(new GUIContent("DataTable"));
                         else
                         {
-                            menu.AddItem(new GUIContent("LocalData"), false, () =>
+                            menu.AddItem(new GUIContent("DataTable"), false, () =>
                             {
                                 runTimeSequenceProp.InsertArrayElementAtIndex(runTimeSequenceProp.arraySize);
                                 SerializedProperty str = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceProp.arraySize - 1);
@@ -1743,19 +1975,49 @@ namespace Framwork
                         }
                         isNull = false;
                     }
-                    if (useFguiProp.boolValue && framworkEntry.FguiConfiguration != null)
+                    if (loadJsonDataProp.boolValue && !jsonDataIsNullProp.boolValue)
                     {
-                        if (fguiRes)
-                        {
-                            menu.AddDisabledItem(new GUIContent("Fgui"));
-                        }
+                        if (jsonDataRes)
+                            menu.AddDisabledItem(new GUIContent("JsonData"));
                         else
                         {
-                            menu.AddItem(new GUIContent("Fgui"), false, () =>
+                            menu.AddItem(new GUIContent("JsonData"), false, () =>
                             {
                                 runTimeSequenceProp.InsertArrayElementAtIndex(runTimeSequenceProp.arraySize);
                                 SerializedProperty str = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceProp.arraySize - 1);
                                 str.enumValueIndex = 3;
+                                serializedObject.ApplyModifiedProperties();
+                            });
+                        }
+                        isNull = false;
+                    }
+                    if (injectLocalDataProp.boolValue && !localDataIsNullProp.boolValue)
+                    {
+                        if (localDataRes)
+                            menu.AddDisabledItem(new GUIContent("LocalData"));
+                        else
+                        {
+                            menu.AddItem(new GUIContent("LocalData"), false, () =>
+                            {
+                                runTimeSequenceProp.InsertArrayElementAtIndex(runTimeSequenceProp.arraySize);
+                                SerializedProperty str = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceProp.arraySize - 1);
+                                str.enumValueIndex = 4;
+                                serializedObject.ApplyModifiedProperties();
+                            });
+                        }
+                        isNull = false;
+                    }
+                    if (loadAssetProp.boolValue && !assetUtilityIsNullProp.boolValue)
+                    {
+                        if (assetRes)
+                            menu.AddDisabledItem(new GUIContent("Asset"));
+                        else
+                        {
+                            menu.AddItem(new GUIContent("Asset"), false, () =>
+                            {
+                                runTimeSequenceProp.InsertArrayElementAtIndex(runTimeSequenceProp.arraySize);
+                                SerializedProperty str = runTimeSequenceProp.GetArrayElementAtIndex(runTimeSequenceProp.arraySize - 1);
+                                str.enumValueIndex = 5;
                                 serializedObject.ApplyModifiedProperties();
                             });
                         }
@@ -1787,5 +2049,18 @@ namespace Framwork
             Key = key;
             Value = value;
         }
+    }
+
+    class AssetData
+    {
+        public AssetData(List<string> names, List<Type> types, List<string> paths)
+        {
+            Names = names.ToArray();
+            Types = types.ToArray();
+            Paths = paths.ToArray();
+        }
+        public string[] Names;
+        public Type[] Types;
+        public string[] Paths;
     }
 }

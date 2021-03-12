@@ -11,8 +11,10 @@ namespace Framwork
         protected abstract IFsm StartFsm { get; }
 
         public IFsm CurrentFsm { get; private set; }
+        public Type CurrentFsmType { get => CurrentFsm.GetType(); }
 
         public IFsm PreFsm { get; private set; }
+        public Type PreFsmType { get => PreFsm.GetType(); }
 
         Dictionary<Type, IFsm> fsms;
 
@@ -40,14 +42,17 @@ namespace Framwork
                     }
                 }
             }
+            if (fsms.Count > 0)
+            {
+                foreach (IFsm item in fsms.Values)
+                    item.Init(this);
+            }
         }
 
         protected virtual void Start()
         {
             if (fsms.Count > 0)
             {
-                foreach (IFsm item in fsms.Values)
-                    item.Init(this);
                 if (StartFsm != null)
                 {
                     StartFsm.Enter();
@@ -72,15 +77,38 @@ namespace Framwork
             if (fsms.TryGetValue(type, out IFsm fsm))
             {
                 if (fsm == CurrentFsm)
+                {
+                    fsm.Refresh(sender);
                     return;
+                }
                 CurrentFsm?.Leave();
                 PreFsm = CurrentFsm;
-                CurrentFsm = fsms[type];
+                CurrentFsm = fsm;
                 CurrentFsm.Enter(sender);
             }
             else
             {
                 Debug.LogWarning($"{GetType().Name}: FsmType of \"{type.Name}\" dont inject.");
+            }
+        }
+
+        public void ChangeState(IFsm fsm, object sender = null)
+        {
+            if (fsm == null)
+            {
+                Debug.LogWarning($"{GetType().Name}: FsmType of \"{fsm.GetType().Name}\" dont inject.");
+            }
+            else
+            {
+                if (fsm == CurrentFsm)
+                {
+                    fsm.Refresh(sender);
+                    return;
+                }
+                CurrentFsm?.Leave();
+                PreFsm = CurrentFsm;
+                CurrentFsm = fsm;
+                CurrentFsm.Enter(sender);
             }
         }
     }

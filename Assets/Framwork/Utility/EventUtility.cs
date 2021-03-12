@@ -15,7 +15,7 @@ namespace Framwork
         {
             Event?.Invoke(eventData, sender);
             if (eventData != null)
-                ReferencePoolUtility.Recircle(eventData);
+                ReferencePool.Recircle(eventData);
         }
 
         public static bool Check(Action<T, object> action)

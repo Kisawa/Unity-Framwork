@@ -1,225 +1,188 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-#if ADDRESSABLE
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using Object = UnityEngine.Object;
 
 namespace Framwork
 {
-    public static class GameObjectReference
+    public sealed class GameObjectReference : ReferenceManagment
     {
-        static Dictionary<string, AsyncOperationHandle<GameObject>> Handles = new Dictionary<string, AsyncOperationHandle<GameObject>>();
-        static Dictionary<string, int> Reference = new Dictionary<string, int>();
-        static Dictionary<GameObject, string> InstanceObj = new Dictionary<GameObject, string>();
-        static List<string> LastingAssetNames = new List<string>();
-        static Dictionary<string, Action> ReleaseAssetCallback = new Dictionary<string, Action>();
+        static Dictionary<GameObject, (string, AssetType)> pathDic = new Dictionary<GameObject, (string, AssetType)>();
 
-        public static void LoadGameObjectAssetAsync(string assetName, bool isLasting, Action<GameObject> callback = null)
+#if ADDRESSABLE
+        public static void LoadGameObjectAsync(string path, Action<GameObject> callback, AssetType assetType = AssetType.Addressables)
+#else
+        public static void LoadGameObjectAsync(string path, Action<GameObject> callback, AssetType assetType = AssetType.Resources)
+#endif
         {
-            if (Handles.TryGetValue(assetName, out AsyncOperationHandle<GameObject> handle))
+            switch (assetType)
             {
-                if (handle.Status == AsyncOperationStatus.Succeeded)
-                    callback?.Invoke(handle.Result);
-                else
-                    handle.Completed += obj => callback?.Invoke(obj.Result);
-                return;
-            }
-            AsyncOperationHandle<GameObject> async = Addressables.LoadAssetAsync<GameObject>(assetName);
-            async.Completed += obj => callback?.Invoke(obj.Result);
-            Handles.Add(assetName, async);
-            Reference.Add(assetName, 0);
-            if (isLasting)
-                LastingAssetNames.Add(assetName);
-        }
-
-        public static void LoadGameObjectAssetsAsync(string[] assetNames, bool isLasting, Action<GameObject> assetCallback = null, Action callback = null)
-        {
-            int count = assetNames.Length;
-            Action<GameObject> action = (obj) =>
-            {
-                assetCallback?.Invoke(obj);
-                if (--count <= 0)
-                    callback?.Invoke();
-            };
-            foreach (string item in assetNames)
-            {
-                if (Handles.TryGetValue(item, out AsyncOperationHandle<GameObject> _obj))
-                {
-                    AsyncOperationHandle<GameObject> handle = _obj;
-                    if (handle.Status == AsyncOperationStatus.Succeeded)
-                        action(_obj.Result);
-                    else
-                        handle.Completed += obj => action(obj.Result);
-                    continue;
-                }
-                AsyncOperationHandle<GameObject> async = Addressables.LoadAssetAsync<GameObject>(item);
-                async.Completed += obj => action(obj.Result);
-                Handles.Add(item, async);
-                Reference.Add(item, 0);
-                if (isLasting)
-                    LastingAssetNames.Add(item);
+                case AssetType.Resources:
+                    ResourcesLoad(path, callback);
+                    break;
+#if ADDRESSABLE
+                case AssetType.Addressables:
+                    AddressablesLoad(path, callback);
+                    break;
+#endif
             }
         }
 
-        public static bool Contains(string assetName)
+#if ADDRESSABLE
+        public static GameObject Instantiate(string path, AssetType assetType = AssetType.Addressables)
+#else
+        public static GameObject Instantiate(string path, AssetType assetType = AssetType.Resources)
+#endif
         {
-            return Handles.ContainsKey(assetName);
+            GameObject gameObject = GetAeest<GameObject>(path, assetType);
+            if (gameObject == null)
+                throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
+            GameObject instance = Object.Instantiate(gameObject);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
         }
 
-        public static GameObject Instantiate(string assetName)
+#if ADDRESSABLE
+        public static GameObject Instantiate(string path, Transform parent, AssetType assetType = AssetType.Addressables)
+#else
+        public static GameObject Instantiate(string path, Transform parent, AssetType assetType = AssetType.Resources)
+#endif
         {
-            GameObject obj = Object.Instantiate(Handles[assetName].Result);
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
+            GameObject gameObject = GetAeest<GameObject>(path, assetType);
+            if (gameObject == null)
+                throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
+            GameObject instance = Object.Instantiate(gameObject, parent);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
         }
 
-        public static GameObject Instantiate(string assetName, Transform parent)
+#if ADDRESSABLE
+        public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, AssetType assetType = AssetType.Addressables)
+#else
+        public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, AssetType assetType = AssetType.Resources)
+#endif
         {
-            GameObject obj = Object.Instantiate(Handles[assetName].Result, parent);
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
+            GameObject gameObject = GetAeest<GameObject>(path, assetType);
+            if (gameObject == null)
+                throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
+            GameObject instance = Object.Instantiate(gameObject, pos, rotation);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
         }
 
-        public static GameObject Instantiate(string assetName, Vector3 pos, Quaternion quaternion)
+#if ADDRESSABLE
+        public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, Transform parent, AssetType assetType = AssetType.Addressables)
+#else
+        public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, Transform parent, AssetType assetType = AssetType.Resources)
+#endif
         {
-            GameObject obj = Object.Instantiate(Handles[assetName].Result, pos, quaternion);
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
-        }
-
-        public static GameObject Instantiate(string assetName, Vector3 pos, Quaternion quaternion, Transform parent)
-        {
-            GameObject obj = Object.Instantiate(Handles[assetName].Result, pos, quaternion, parent);
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
+            GameObject gameObject = GetAeest<GameObject>(path, assetType);
+            if (gameObject == null)
+                throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
+            GameObject instance = Object.Instantiate(gameObject, pos, rotation, parent);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
         }
 
         public static GameObject Instantiate(GameObject prefab)
         {
-            GameObject obj = Object.Instantiate(prefab);
-            string assetName = Handles.Where(x => x.Value.Result == prefab).FirstOrDefault().Key;
-            if (string.IsNullOrEmpty(assetName))
-            {
-                Debug.LogWarning($"GameObjectReference: Instantiate an other prefab with name \"{prefab.name}\"");
-                return obj;
-            }
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
+            GameObject instance = Object.Instantiate(prefab);
+            string path = CheckPath(prefab, out AssetType assetType);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
         }
 
         public static GameObject Instantiate(GameObject prefab, Transform parent)
         {
-            GameObject obj = Object.Instantiate(prefab, parent);
-            string assetName = Handles.Where(x => x.Value.Result == prefab).FirstOrDefault().Key;
-            if (string.IsNullOrEmpty(assetName))
+            GameObject instance = Object.Instantiate(prefab, parent);
+            string path = CheckPath(prefab, out AssetType assetType);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
+        }
+
+        public static GameObject Instantiate(GameObject prefab, Vector3 pos, Quaternion rotation)
+        {
+            GameObject instance = Object.Instantiate(prefab, pos, rotation);
+            string path = CheckPath(prefab, out AssetType assetType);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
+        }
+
+        public static GameObject Instantiate(GameObject prefab, Vector3 pos, Quaternion rotation, Transform parent)
+        {
+            GameObject instance = Object.Instantiate(prefab, pos, rotation, parent);
+            string path = CheckPath(prefab, out AssetType assetType);
+            pathDic[instance] = (path, assetType);
+            AddReference(path, assetType);
+            return instance;
+        }
+
+#if ADDRESSABLE
+        public static void InstantiateAsync(string path, Action<GameObject> callbcak, AssetType assetType = AssetType.Addressables)
+#else
+        public static void InstantiateAsync(string path, Action<GameObject> callbcak, AssetType assetType = AssetType.Resources)
+#endif
+        {
+            LoadGameObjectAsync(path, obj =>
             {
-                Debug.LogWarning($"GameObjectReference: Instantiate an other prefab with name \"{prefab.name}\"");
-                return obj;
-            }
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
+                GameObject instance = Object.Instantiate(obj);
+                pathDic[instance] = (path, assetType);
+                AddReference(path, assetType);
+                callbcak?.Invoke(instance);
+            }, assetType);
         }
 
-        public static GameObject Instantiate(GameObject prefab, Vector3 pos, Quaternion quaternion)
+#if ADDRESSABLE
+        public static void InstantiateAsync(string path, Transform parent, Action<GameObject> callbcak, AssetType assetType = AssetType.Addressables)
+#else
+        public static void InstantiateAsync(string path, Transform parent, Action<GameObject> callbcak, AssetType assetType = AssetType.Resources)
+#endif
         {
-            GameObject obj = Object.Instantiate(prefab, pos, quaternion);
-            string assetName = Handles.Where(x => x.Value.Result == prefab).FirstOrDefault().Key;
-            if (string.IsNullOrEmpty(assetName))
+            LoadGameObjectAsync(path, obj =>
             {
-                Debug.LogWarning($"GameObjectReference: Instantiate an other prefab with name \"{prefab.name}\"");
-                return obj;
-            }
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
+                GameObject instance = Object.Instantiate(obj, parent);
+                pathDic[instance] = (path, assetType);
+                AddReference(path, assetType);
+                callbcak?.Invoke(instance);
+            }, assetType);
         }
 
-        public static GameObject Instantiate(GameObject prefab, Vector3 pos, Quaternion quaternion, Transform parent)
+#if ADDRESSABLE
+        public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Addressables)
+#else
+        public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Resources)
+#endif
         {
-            GameObject obj = Object.Instantiate(prefab, pos, quaternion, parent);
-            string assetName = Handles.Where(x => x.Value.Result == prefab).FirstOrDefault().Key;
-            if (string.IsNullOrEmpty(assetName))
+            LoadGameObjectAsync(path, obj =>
             {
-                Debug.LogWarning($"GameObjectReference: Instantiate an other prefab with name \"{prefab.name}\"");
-                return obj;
-            }
-            InstanceObj.Add(obj, assetName);
-            AddReference(assetName);
-            return obj;
+                GameObject instance = Object.Instantiate(obj, pos, rotation);
+                pathDic[instance] = (path, assetType);
+                AddReference(path, assetType);
+                callbcak?.Invoke(instance);
+            }, assetType);
         }
 
-        public static void InstantiateAsync(string assetName, Action<GameObject> callbcak)
+#if ADDRESSABLE
+        public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Transform parent, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Addressables)
+#else
+        public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Transform parent, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Resources)
+#endif
         {
-            LoadGameObjectAssetAsync(assetName, false, obj => { GameObject _obj = Instantiate(assetName); callbcak?.Invoke(_obj); });
-        }
-
-        public static void InstantiateAsync(string assetName, Transform parent, Action<GameObject> callbcak)
-        {
-            LoadGameObjectAssetAsync(assetName, false, obj => { GameObject _obj = Instantiate(assetName, parent); callbcak?.Invoke(_obj); });
-        }
-
-        public static void InstantiateAsync(string assetName, Vector3 pos, Quaternion quaternion, Action<GameObject> callbcak = null)
-        {
-            LoadGameObjectAssetAsync(assetName, false, obj => { GameObject _obj = Instantiate(assetName, pos, quaternion); callbcak?.Invoke(_obj); });
-        }
-
-        public static void InstantiateAsync(string assetName, Vector3 pos, Quaternion quaternion, Transform parent, Action<GameObject> callbcak = null)
-        {
-            LoadGameObjectAssetAsync(assetName, false, obj => { GameObject _obj = Instantiate(assetName, pos, quaternion, parent); callbcak?.Invoke(_obj); });
-        }
-
-        public static void InstantiateAsync(int count, string assetName, Action<GameObject[]> callbcak)
-        {
-            LoadGameObjectAssetAsync(assetName, false, obj =>
+            LoadGameObjectAsync(path, obj =>
             {
-                GameObject[] objs = new GameObject[count];
-                for (int i = 0; i < count; i++)
-                    objs[i] = Instantiate(assetName);
-                callbcak?.Invoke(objs);
-            });
-        }
-
-        public static void InstantiateAsync(int count, string assetName, Transform parent, Action<GameObject[]> callbcak)
-        {
-            LoadGameObjectAssetAsync(assetName, false, obj =>
-            {
-                GameObject[] objs = new GameObject[count];
-                for (int i = 0; i < count; i++)
-                    objs[i] = Instantiate(assetName, parent);
-                callbcak?.Invoke(objs);
-            });
-        }
-
-        public static void InstantiateAsync(int count, string assetName, Vector3 pos, Quaternion quaternion, Action<GameObject[]> callbcak = null)
-        {
-            LoadGameObjectAssetAsync(assetName, false, obj =>
-            {
-                GameObject[] objs = new GameObject[count];
-                for (int i = 0; i < count; i++)
-                    objs[i] = Instantiate(assetName, pos, quaternion);
-                callbcak?.Invoke(objs);
-            });
-        }
-
-        public static void InstantiateAsync(int count, string assetName, Vector3 pos, Quaternion quaternion, Transform parent, Action<GameObject[]> callbcak = null)
-        {
-            LoadGameObjectAssetAsync(assetName, false, obj =>
-            {
-                GameObject[] objs = new GameObject[count];
-                for (int i = 0; i < count; i++)
-                    objs[i] = Instantiate(assetName, pos, quaternion, parent);
-                callbcak?.Invoke(objs);
-            });
+                GameObject instance = Object.Instantiate(obj, pos, rotation, parent);
+                pathDic[instance] = (path, assetType);
+                AddReference(path, assetType);
+                callbcak?.Invoke(instance);
+            }, assetType);
         }
 
 
@@ -227,59 +190,40 @@ namespace Framwork
         {
             if (obj == null)
                 return;
-            if (InstanceObj.TryGetValue(obj, out string str))
+            if (pathDic.TryGetValue(obj, out (string, AssetType) item))
             {
-                SubReference(str);
-                InstanceObj.Remove(obj);
+                if (linked.TryGetValue(item, out List<(string, AssetType)> link))
+                {
+                    for (int i = 0; i < link.Count; i++)
+                    {
+                        (string, AssetType) _item = link[i];
+                        for (int j = 0; j < pathDic.Count; j++)
+                        {
+                            var linkInstance = pathDic.ElementAt(j);
+                            if (linkInstance.Value == _item)
+                            {
+                                Destroy(linkInstance.Key);
+                                j--;
+                            }
+                        }
+                    }
+                }
+                SubReference(item.Item1, item.Item2);
+                pathDic.Remove(obj);
             }
             Object.Destroy(obj);
         }
 
-        public static void Release(string assetName)
+        public static void LinkAsset(GameObject root, params GameObject[] element)
         {
-            if (Handles.TryGetValue(assetName, out AsyncOperationHandle<GameObject> _obj))
+            string rootPath = CheckPath(root, out AssetType rootAssetType);
+            (string, AssetType)[] elementItem = new (string, AssetType)[element.Length];
+            for (int i = 0; i < element.Length; i++)
             {
-                Addressables.Release(_obj);
-                Handles.Remove(assetName);
-                Reference.Remove(assetName);
-                if (LastingAssetNames.Contains(assetName))
-                    LastingAssetNames.Remove(assetName);
-                GameObject[] removeKeys = InstanceObj.Where(x => x.Value == assetName).Select(x => x.Key).ToArray();
-                for (int i = 0; i < removeKeys.Length; i++)
-                    InstanceObj.Remove(removeKeys[i]);
+                string elementPath = CheckPath(element[i], out AssetType elementAssetType);
+                elementItem[i] = (elementPath, elementAssetType);
             }
-        }
-
-        public static void AddReference(string assetName)
-        {
-            Reference[assetName]++;
-        }
-
-        public static void SubReference(string assetName)
-        {
-            if (!LastingAssetNames.Contains(assetName) && --Reference[assetName] <= 0)
-            {
-                Addressables.Release(Handles[assetName]);
-                Handles.Remove(assetName);
-                Reference.Remove(assetName);
-                if (ReleaseAssetCallback.TryGetValue(assetName, out Action callbcak))
-                    callbcak?.Invoke();
-            }
-        }
-
-        public static void AddReleaseAssetCallback(string assetName, Action callback)
-        {
-            if (ReleaseAssetCallback.TryGetValue(assetName, out Action action))
-                action += callback;
-            else
-                ReleaseAssetCallback[assetName] = callback;
-        }
-
-        public static void SubReleaseAssetCallback(string assetName, Action callback)
-        {
-            if (ReleaseAssetCallback.TryGetValue(assetName, out Action action))
-                action -= callback;
+            LinkAsset(rootPath, rootAssetType, elementItem);
         }
     }
 }
-#endif

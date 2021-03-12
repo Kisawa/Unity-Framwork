@@ -15,6 +15,12 @@ public class JsonData1 : JsonDataUntility
 
     [JsonField]
     Item[] persons;
+
+    protected override void EndInject()
+    {
+        base.EndInject();
+        Debug.LogError("JsonData1" + "  " + label);
+    }
 }
 
 public struct Item

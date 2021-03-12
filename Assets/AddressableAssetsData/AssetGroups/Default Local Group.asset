@@ -21,8 +21,14 @@ MonoBehaviour:
     m_Address: JsonData1
     m_ReadOnly: 0
     m_SerializedLabels: []
-    m_MainAsset: {fileID: 4900000, guid: c21bda10d8bf09449b5d0d440a41dac3, type: 3}
-    m_TargetAsset: {fileID: 4900000, guid: c21bda10d8bf09449b5d0d440a41dac3, type: 3}
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
+  - m_GUID: ff8c045d692f3834d83a51ba4b68de22
+    m_Address: box
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 72aee7d15c96efb478c9687a85dde351, type: 2}
   m_SchemaSet:

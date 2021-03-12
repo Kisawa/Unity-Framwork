@@ -8,6 +8,7 @@ namespace Framwork
     {
         void Init(FsmUtility fsmUtility);
         void Enter(object sender = null);
+        void Refresh(object sender = null);
         void Leave();
         void Update();
         void FixedUpdate();
