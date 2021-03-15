@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Framwork;
-#if ADDRESSABLE
+#if ADDRESSABLES
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 #endif
@@ -12,7 +12,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 namespace FairyGUI {
     public partial class UIPackage
     {
-#if ADDRESSABLE
+#if ADDRESSABLES
         static Dictionary<string, AsyncOperationHandle> AddressableHandles = new Dictionary<string, AsyncOperationHandle>();
 #endif
         static Dictionary<string, ResourceRequest> ResourceHandles = new Dictionary<string, ResourceRequest>();
@@ -88,7 +88,7 @@ namespace FairyGUI {
                         addPackageWithType(assetType, asset, assetName);
                     };
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     PackageCallbackList.Add(assetName, callback);
                     AsyncOperationHandle<TextAsset> asyncPackageLoad = Addressables.LoadAssetAsync<TextAsset>($"{assetName}_fui");
@@ -208,7 +208,7 @@ namespace FairyGUI {
                         loadAtlasWithType(tex, item);
                     };
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     AsyncOperationHandle<Texture> asyncTextureLoad = Addressables.LoadAssetAsync<Texture>(assetReferenceName);
                     asyncTextureLoad.Completed += obj =>
@@ -274,7 +274,7 @@ namespace FairyGUI {
                         loadSoundWithType(audioClip, item);
                     };
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     AsyncOperationHandle<AudioClip> asyncAudioLoad = Addressables.LoadAssetAsync<AudioClip>(assetReferenceName);
                     asyncAudioLoad.Completed += obj =>
@@ -328,7 +328,7 @@ namespace FairyGUI {
                     Resources.UnloadAsset(request.asset);
                     ResourceHandles.Remove(key);
                 }
-#if ADDRESSABLE
+#if ADDRESSABLES
                 if (AddressableHandles.TryGetValue(key, out AsyncOperationHandle handle))
                 {
                     Addressables.Release(handle);
@@ -342,7 +342,7 @@ namespace FairyGUI {
                         Resources.UnloadAsset(_request.asset);
                         ResourceHandles.Remove(item.file);
                     }
-#if ADDRESSABLE
+#if ADDRESSABLES
                     if (AddressableHandles.TryGetValue(item.file, out AsyncOperationHandle _handle))
                     {
                         Addressables.Release(_handle);
@@ -391,7 +391,7 @@ namespace FairyGUI {
                             Resources.UnloadAsset(request.asset);
                             ResourceHandles.Remove(packageName);
                         }
-#if ADDRESSABLE
+#if ADDRESSABLES
                         if (AddressableHandles.TryGetValue(packageName, out AsyncOperationHandle handle))
                         {
                             Addressables.Release(handle);
@@ -405,7 +405,7 @@ namespace FairyGUI {
                                 Resources.UnloadAsset(_request.asset);
                                 ResourceHandles.Remove(item.file);
                             }
-#if ADDRESSABLE
+#if ADDRESSABLES
                             if (AddressableHandles.TryGetValue(item.file, out AsyncOperationHandle _handle))
                             {
                                 Addressables.Release(_handle);
@@ -426,7 +426,7 @@ namespace FairyGUI {
                 foreach (var item in ResourceHandles.Values)
                     Resources.UnloadAsset(item.asset);
                 ResourceHandles.Clear();
-#if ADDRESSABLE
+#if ADDRESSABLES
                 foreach (var item in AddressableHandles.Values)
                     Addressables.Release(item);
                 AddressableHandles.Clear();

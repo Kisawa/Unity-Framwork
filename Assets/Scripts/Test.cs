@@ -13,13 +13,13 @@ public class Test : MonoBehaviour
 
     public void callback()
     {
-        AssetGroup assetGroup = new AssetGroup("box", AssetType.Addressables, ("circle", AssetType.Resources));
-        assetGroup.Load(() =>
-        {
-            box = GameObjectReference.Instantiate("box");
-            circle = GameObjectReference.Instantiate("circle");
-            GameObjectReference.Instantiate("circle");
-        });
+        //AssetGroup assetGroup = new AssetGroup("box", AssetType.Addressables, ("circle", AssetType.Resources));
+        //assetGroup.Load(() =>
+        //{
+        //    box = GameObjectReference.Instantiate("box");
+        //    circle = GameObjectReference.Instantiate("circle", AssetType.Resources);
+        //    GameObjectReference.Instantiate("circle", AssetType.Resources);
+        //});
         //ReferenceManagment.LinkAsset("box", AssetType.Addressables, ("circle", AssetType.Resources));
     }
 
@@ -30,10 +30,14 @@ public class Test : MonoBehaviour
     {
         if (GUILayout.Button("Remove"))
         {
+            AssetUtility.GetPrefabUtilitySelf<PrefabManager>().Unload();
+        }
+        if (GUILayout.Button("Remove"))
+        {
             GameObjectReference.Destroy(box);
         }
 
-        if(GUILayout.Button("Info"))
+        if (GUILayout.Button("Info"))
             ReferenceManagment.DebugInfo();
     }
 }

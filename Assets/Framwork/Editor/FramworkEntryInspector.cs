@@ -1841,20 +1841,22 @@ namespace Framwork
                     FieldInfo field = fields[j];
                     if (field.IsLiteral || (!typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType) && field.FieldType != typeof(ObjectPool)))
                         continue;
-                    if (field.IsDefined(typeof(ResourceAttribute), true))
+                    if (field.IsDefined(typeof(ResourcesAttribute), true))
                     {
-                        ResourceAttribute attribute = field.GetCustomAttribute(typeof(ResourceAttribute), true) as ResourceAttribute;
+                        ResourcesAttribute attribute = field.GetCustomAttribute(typeof(ResourcesAttribute), true) as ResourcesAttribute;
                         names.Add(field.Name);
                         types.Add(field.FieldType);
                         paths.Add($"[Resources: { attribute.Path}]");
                     }
-                    if (field.IsDefined(typeof(AddressableAttribute), true))
+#if ADDRESSABLES
+                    if (field.IsDefined(typeof(AddressablesAttribute), true))
                     {
-                        AddressableAttribute attribute = field.GetCustomAttribute(typeof(AddressableAttribute), true) as AddressableAttribute;
+                        AddressablesAttribute attribute = field.GetCustomAttribute(typeof(AddressablesAttribute), true) as AddressablesAttribute;
                         names.Add(field.Name);
                         types.Add(field.FieldType);
                         paths.Add($"[Addressables: { attribute.Path}]");
                     }
+#endif
                 }
                 assetUtilityDatas[i] = new AssetData(names, types, paths);
             }

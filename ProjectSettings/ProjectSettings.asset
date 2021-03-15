@@ -675,7 +675,7 @@ PlayerSettings:
   webGLWasmStreaming: 0
   scriptingDefineSymbols:
     1: ADDRESSABLE
-    7: ADDRESSABLE
+    7: ADDRESSABLES
   platformArchitecture: {}
   scriptingBackend:
     Android: 1

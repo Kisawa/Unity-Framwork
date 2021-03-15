@@ -26,10 +26,10 @@ namespace Framwork
             init(initCount);
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public ObjectPool(string path, int initCount = 0, Vector3 groupScale = default, AssetType assetType = AssetType.Addressables)
 #else
-        public ObjectsPool(string assetName, int initCount = 0, Transform parent = null, Vector3 parentScale = default, AssetType assetType = AssetType.Resources)
+        public ObjectPool(string path, int initCount = 0, Transform parent = null, Vector3 groupScale = default, AssetType assetType = AssetType.Resources)
 #endif
         {
             this.path = path;
@@ -47,7 +47,7 @@ namespace Framwork
                         init(initCount);
                     });
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     AddressablesLoad<GameObject>(path, obj =>
                     {

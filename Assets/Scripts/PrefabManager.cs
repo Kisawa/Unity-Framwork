@@ -8,10 +8,10 @@ public class PrefabManager : AssetUtility
     //[Resource("circle")]
     //public GameObject Circle;
 
-    [Addressable("box")]
-    ObjectPool box;
+    //[Addressable("box")]
+    //ObjectPool box;
 
-    [Resource("DataTable1")]
+    [Resources("DataTable1")]
     TextAsset dataTable1;
 
     protected override void EndInject()

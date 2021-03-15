@@ -3,22 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-#if ADDRESSABLE
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-#endif
 using LitJson;
 using System.Threading.Tasks;
 
 namespace Framwork
 {
-    public abstract class JsonDataUntility
+    public abstract class JsonDataUntility : ReferenceManagment
     {
         static Dictionary<string, JsonDataUntility> JsonDataDictionary = new Dictionary<string, JsonDataUntility>();
 
         public abstract string JsonAssetName { get; }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public virtual AssetType AssetType { get => AssetType.Addressables; }
 #else
         public virtual AssetType AssetType { get => AssetType.Resources; }
@@ -36,30 +32,29 @@ namespace Framwork
             {
                 case AssetType.Resources:
                     {
-                        ResourceRequest resourceRequest = Resources.LoadAsync<TextAsset>(JsonAssetName);
-                        resourceRequest.completed += obj =>
+                        ResourcesLoad<TextAsset>(JsonAssetName, obj =>
                         {
-                            TextAsset txt = resourceRequest.asset as TextAsset;
+                            AddReference(JsonAssetName, AssetType.Resources);
                             StartInject();
-                            inject(txt.text);
+                            inject(obj.text);
                             EndInject();
-                            Resources.UnloadAsset(resourceRequest.asset);
+                            SubReference(JsonAssetName, AssetType.Resources);
                             callback?.Invoke(this);
-                        };
+                        });
                         break;
                     }
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     {
-                        AsyncOperationHandle<TextAsset> asyncTextAssetLoad = Addressables.LoadAssetAsync<TextAsset>(JsonAssetName);
-                        asyncTextAssetLoad.Completed += obj =>
+                        AddressablesLoad<TextAsset>(JsonAssetName, obj =>
                         {
+                            AddReference(JsonAssetName, AssetType.Addressables);
                             StartInject();
-                            inject(asyncTextAssetLoad.Result.text);
+                            inject(obj.text);
                             EndInject();
-                            Addressables.Release(asyncTextAssetLoad);
+                            SubReference(JsonAssetName, AssetType.Addressables);
                             callback?.Invoke(this);
-                        };
+                        });
                         break;
                     }
 #endif

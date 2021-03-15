@@ -3,14 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using FairyGUI;
 using System.Linq;
-#if ADDRESSABLE
-using UnityEngine.AddressableAssets;
-#endif
 using static FairyGUI.UIContentScaler;
 
 namespace Framwork
 {
-    public abstract class FguiUtility
+    public abstract class FguiUtility : ReferenceManagment
     {
         public abstract string PackName { get; }
         public abstract string EnterUIName { get; }
@@ -185,22 +182,23 @@ namespace Framwork
                 switch (configuration.FguiAssetType)
                 {
                     case AssetType.Resources:
-                        ResourceRequest request = Resources.LoadAsync<TextAsset>(configuration.LanguageAssetName);
-                        request.completed += obj =>
+                        ResourcesLoad<TextAsset>(configuration.LanguageAssetName, obj =>
                         {
-                            TextAsset languageAsset = request.asset as TextAsset;
-                            UIPackage.SetStringsSource(new FairyGUI.Utils.XML(languageAsset.text));
-                            Resources.UnloadAsset(request.asset);
+                            AddReference(configuration.LanguageAssetName, AssetType.Resources);
+                            UIPackage.SetStringsSource(new FairyGUI.Utils.XML(obj.text));
+                            SubReference(configuration.LanguageAssetName, AssetType.Resources);
                             action();
-                        };
+                        });
                         break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                     case AssetType.Addressables:
-                        Addressables.LoadAssetAsync<TextAsset>(configuration.LanguageAssetName).Completed += (obj) =>
+                        AddressablesLoad<TextAsset>(configuration.LanguageAssetName, obj =>
                         {
-                            UIPackage.SetStringsSource(new FairyGUI.Utils.XML(obj.Result.text));
+                            AddReference(configuration.LanguageAssetName, AssetType.Addressables);
+                            UIPackage.SetStringsSource(new FairyGUI.Utils.XML(obj.text));
+                            SubReference(configuration.LanguageAssetName, AssetType.Addressables);
                             action();
-                        };
+                        });
                         break;
 #endif
                 }

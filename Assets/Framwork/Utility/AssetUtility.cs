@@ -38,10 +38,10 @@ namespace Framwork
                     count--;
                     continue;
                 }
-                if (item.IsDefined(typeof(ResourceAttribute), true))
+                if (item.IsDefined(typeof(ResourcesAttribute), true))
                 {
-                    ResourceAttribute attribute = item.GetCustomAttribute(typeof(ResourceAttribute), true) as ResourceAttribute;
-                    ResourcesLoad(attribute.Path, obj =>
+                    ResourcesAttribute attribute = item.GetCustomAttribute(typeof(ResourcesAttribute), true) as ResourcesAttribute;
+                    ResourcesLoad<Object>(attribute.Path, obj =>
                     {
                         AddReference(attribute.Path, AssetType.Resources);
                         if (item.FieldType == typeof(ObjectPool))
@@ -49,12 +49,12 @@ namespace Framwork
                         else
                             item.SetValue(this, obj);
                         action.Invoke();
-                    }, item.FieldType);
+                    });
                 }
-#if ADDRESSABLE
-                else if (item.IsDefined(typeof(AddressableAttribute), true))
+#if ADDRESSABLES
+                else if (item.IsDefined(typeof(AddressablesAttribute), true))
                 {
-                    AddressableAttribute attribute = item.GetCustomAttribute(typeof(AddressableAttribute), true) as AddressableAttribute;
+                    AddressablesAttribute attribute = item.GetCustomAttribute(typeof(AddressablesAttribute), true) as AddressablesAttribute;
                     AddressablesLoad<Object>(attribute.Path, obj =>
                     {
                         AddReference(attribute.Path, AssetType.Addressables);
@@ -81,10 +81,10 @@ namespace Framwork
                 FieldInfo item = fields[i];
                 if (item.IsLiteral || (!typeof(Object).IsAssignableFrom(item.FieldType) && item.FieldType != typeof(ObjectPool)))
                     continue;
-                if (item.IsDefined(typeof(ResourceAttribute), true))
+                if (item.IsDefined(typeof(ResourcesAttribute), true))
                 {
                     resource = true;
-                    ResourceAttribute attribute = item.GetCustomAttribute(typeof(ResourceAttribute), true) as ResourceAttribute;
+                    ResourcesAttribute attribute = item.GetCustomAttribute(typeof(ResourcesAttribute), true) as ResourcesAttribute;
                     SubReference(attribute.Path, AssetType.Resources);
                     if (item.FieldType == typeof(ObjectPool))
                     {
@@ -93,10 +93,10 @@ namespace Framwork
                     }
                     item.SetValue(this, null);
                 }
-#if ADDRESSABLE
-                else if (item.IsDefined(typeof(AddressableAttribute), true))
+#if ADDRESSABLES
+                else if (item.IsDefined(typeof(AddressablesAttribute), true))
                 {
-                    AddressableAttribute attribute = item.GetCustomAttribute(typeof(AddressableAttribute), true) as AddressableAttribute;
+                    AddressablesAttribute attribute = item.GetCustomAttribute(typeof(AddressablesAttribute), true) as AddressablesAttribute;
                     SubReference(attribute.Path, AssetType.Addressables);
                     if (item.FieldType == typeof(ObjectPool))
                     {
@@ -168,21 +168,21 @@ namespace Framwork
     }
 
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-    public class ResourceAttribute : Attribute 
+    public class ResourcesAttribute : Attribute 
     {
         public string Path;
-        public ResourceAttribute(string saveName)
+        public ResourcesAttribute(string saveName)
         {
             Path = saveName;
         }
     }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-    public class AddressableAttribute : Attribute
+    public class AddressablesAttribute : Attribute
     {
         public string Path;
-        public AddressableAttribute(string saveName)
+        public AddressablesAttribute(string saveName)
         {
             Path = saveName;
         }

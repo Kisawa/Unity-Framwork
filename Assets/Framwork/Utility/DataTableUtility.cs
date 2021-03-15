@@ -3,20 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.Reflection;
-#if ADDRESSABLE
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-#endif
 
 namespace Framwork
 {
-    public abstract class DataTableUtility
+    public abstract class DataTableUtility : ReferenceManagment
     {
         static Dictionary<string, DataTableUtility> DataTableDictionary = new Dictionary<string, DataTableUtility>();
 
         public abstract string TableAssetName { get; }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public virtual AssetType AssetType { get => AssetType.Addressables; }
 #else
         public virtual AssetType AssetType { get => AssetType.Resources; }
@@ -38,30 +34,29 @@ namespace Framwork
             {
                 case AssetType.Resources:
                     {
-                        ResourceRequest resourceRequest = Resources.LoadAsync<TextAsset>(TableAssetName);
-                        resourceRequest.completed += obj =>
+                        ResourcesLoad<TextAsset>(TableAssetName, obj =>
                         {
-                            TextAsset txt = resourceRequest.asset as TextAsset;
+                            AddReference(TableAssetName, AssetType.Resources);
                             StartInject();
-                            InjectData(txt.text);
+                            InjectData(obj.text);
                             EndInject();
-                            Resources.UnloadAsset(resourceRequest.asset);
+                            SubReference(TableAssetName, AssetType.Resources);
                             callback?.Invoke(this);
-                        };
+                        });
                         break;
                     }
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     {
-                        AsyncOperationHandle<TextAsset> asyncTextAssetLoad = Addressables.LoadAssetAsync<TextAsset>(TableAssetName);
-                        asyncTextAssetLoad.Completed += obj =>
+                        AddressablesLoad<TextAsset>(TableAssetName, obj =>
                         {
+                            AddReference(TableAssetName, AssetType.Addressables);
                             StartInject();
-                            InjectData(asyncTextAssetLoad.Result.text);
+                            InjectData(obj.text);
                             EndInject();
-                            Addressables.Release(asyncTextAssetLoad);
+                            SubReference(TableAssetName, AssetType.Addressables);
                             callback?.Invoke(this);
-                        };
+                        });
                         break;
                     }
 #endif

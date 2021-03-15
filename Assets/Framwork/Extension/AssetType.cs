@@ -6,7 +6,7 @@ namespace Framwork
 {
     public enum AssetType
     {
-#if ADDRESSABLE
+#if ADDRESSABLES
         Resources,
         Addressables
 #else

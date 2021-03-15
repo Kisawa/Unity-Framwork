@@ -10,7 +10,7 @@ namespace Framwork
     {
         static Dictionary<GameObject, (string, AssetType)> pathDic = new Dictionary<GameObject, (string, AssetType)>();
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static void LoadGameObjectAsync(string path, Action<GameObject> callback, AssetType assetType = AssetType.Addressables)
 #else
         public static void LoadGameObjectAsync(string path, Action<GameObject> callback, AssetType assetType = AssetType.Resources)
@@ -21,7 +21,7 @@ namespace Framwork
                 case AssetType.Resources:
                     ResourcesLoad(path, callback);
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     AddressablesLoad(path, callback);
                     break;
@@ -29,7 +29,7 @@ namespace Framwork
             }
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static GameObject Instantiate(string path, AssetType assetType = AssetType.Addressables)
 #else
         public static GameObject Instantiate(string path, AssetType assetType = AssetType.Resources)
@@ -44,7 +44,7 @@ namespace Framwork
             return instance;
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static GameObject Instantiate(string path, Transform parent, AssetType assetType = AssetType.Addressables)
 #else
         public static GameObject Instantiate(string path, Transform parent, AssetType assetType = AssetType.Resources)
@@ -59,7 +59,7 @@ namespace Framwork
             return instance;
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, AssetType assetType = AssetType.Addressables)
 #else
         public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, AssetType assetType = AssetType.Resources)
@@ -74,7 +74,7 @@ namespace Framwork
             return instance;
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, Transform parent, AssetType assetType = AssetType.Addressables)
 #else
         public static GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, Transform parent, AssetType assetType = AssetType.Resources)
@@ -125,7 +125,7 @@ namespace Framwork
             return instance;
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static void InstantiateAsync(string path, Action<GameObject> callbcak, AssetType assetType = AssetType.Addressables)
 #else
         public static void InstantiateAsync(string path, Action<GameObject> callbcak, AssetType assetType = AssetType.Resources)
@@ -140,7 +140,7 @@ namespace Framwork
             }, assetType);
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static void InstantiateAsync(string path, Transform parent, Action<GameObject> callbcak, AssetType assetType = AssetType.Addressables)
 #else
         public static void InstantiateAsync(string path, Transform parent, Action<GameObject> callbcak, AssetType assetType = AssetType.Resources)
@@ -155,7 +155,7 @@ namespace Framwork
             }, assetType);
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Addressables)
 #else
         public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Resources)
@@ -170,7 +170,7 @@ namespace Framwork
             }, assetType);
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Transform parent, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Addressables)
 #else
         public static void InstantiateAsync(string path, Vector3 pos, Quaternion rotation, Transform parent, Action<GameObject> callbcak = null, AssetType assetType = AssetType.Resources)

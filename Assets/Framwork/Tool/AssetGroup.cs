@@ -76,7 +76,7 @@ namespace Framwork
                 case AssetType.Resources:
                     ResourcesLoad(path, callback);
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     AddressablesLoad(path, callback);
                     break;

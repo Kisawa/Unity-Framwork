@@ -8,7 +8,7 @@ namespace Framwork
 {
     public sealed class AssetManagment : ReferenceManagment
     {
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static void LoadAssetAsync<T>(string path, Action<T> callback, AssetType assetType = AssetType.Addressables) where T : Object
 #else
         public static void LoadAssetAsync<T>(string path, Action<T> callback, AssetType assetType = AssetType.Resources) where T : Object
@@ -19,7 +19,7 @@ namespace Framwork
                 case AssetType.Resources:
                     ResourcesLoad(path, callback);
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     AddressablesLoad(path, callback);
                     break;
@@ -27,7 +27,7 @@ namespace Framwork
             }
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         public static void UnloadAsset(string path, AssetType assetType = AssetType.Addressables)
 #else
         public static void UnloadAsset(string path, AssetType assetType = AssetType.Resources)
@@ -56,7 +56,7 @@ namespace Framwork
 
         public static class Use
         {
-#if ADDRESSABLE
+#if ADDRESSABLES
             public static void AssetAsync<T>(string path, Action<T> callback, AssetType assetType = AssetType.Addressables) where T : Object
 #else
             public static void AssetAsync<T>(string path, Action<T> callback, AssetType assetType = AssetType.Resources) where T : Object
@@ -69,7 +69,7 @@ namespace Framwork
                 }, assetType);
             }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
             public static T Asset<T>(string path, AssetType assetType = AssetType.Addressables) where T : Object
 #else
             public static T Asset<T>(string path, AssetType assetType = AssetType.Resources) where T : Object

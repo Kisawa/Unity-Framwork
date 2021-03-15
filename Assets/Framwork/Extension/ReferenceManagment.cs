@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-#if ADDRESSABLE
+#if ADDRESSABLES
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 #endif
@@ -12,9 +12,8 @@ namespace Framwork
     public abstract class ReferenceManagment
     {
         static Dictionary<string, int> R_ReferenceCount = new Dictionary<string, int>();
-        static Dictionary<string, Type> R_TypeDic = new Dictionary<string, Type>();
         static Dictionary<string, ResourceRequest> R_Handle = new Dictionary<string, ResourceRequest>();
-#if ADDRESSABLE
+#if ADDRESSABLES
         static Dictionary<string, int> A_ReferenceCount = new Dictionary<string, int>();
         static Dictionary<string, AsyncOperationHandle> A_Handles = new Dictionary<string, AsyncOperationHandle>();
 #endif
@@ -28,7 +27,7 @@ namespace Framwork
                     if (R_ReferenceCount.ContainsKey(path))
                         R_ReferenceCount[path]++;
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     if (A_ReferenceCount.ContainsKey(path))
                         A_ReferenceCount[path]++;
@@ -52,16 +51,15 @@ namespace Framwork
                     {
                         if (R_Handle.TryGetValue(path, out ResourceRequest request))
                         {
-                            if (R_TypeDic[path] != typeof(GameObject))
+                            if ((request.asset as GameObject) == null)
                                 Resources.UnloadAsset(request.asset);
                             R_Handle.Remove(path);
                         }
                         R_ReferenceCount.Remove(path);
-                        R_TypeDic.Remove(path);
                         unload = true;
                     }
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
                     if (A_ReferenceCount.ContainsKey(path) && --A_ReferenceCount[path] <= 0)
                     {
@@ -100,7 +98,7 @@ namespace Framwork
                     return item.Key;
                 }
             }
-#if ADDRESSABLE
+#if ADDRESSABLES
             foreach (var item in A_Handles)
             {
                 if ((item.Value.Result as Object) == obj)
@@ -122,33 +120,14 @@ namespace Framwork
                     if (R_Handle.TryGetValue(path, out ResourceRequest request) && request.isDone)
                         return request.asset as T;
                     break;
-#if ADDRESSABLE
+#if ADDRESSABLES
                 case AssetType.Addressables:
-                    if (A_Handles.TryGetValue(path, out AsyncOperationHandle handle))
+                    if (A_Handles.TryGetValue(path, out AsyncOperationHandle handle) && handle.IsDone)
                         return handle.Result as T;
                     break;
 #endif
             }
             return null;
-        }
-
-        protected static void ResourcesLoad(string path, Action<Object> callback, Type type)
-        {
-            if (R_Handle.TryGetValue(path, out ResourceRequest request))
-            {
-                if (request.isDone)
-                    callback?.Invoke(request.asset);
-                else
-                    request.completed += obj => callback?.Invoke(request.asset);
-            }
-            else
-            {
-                request = Resources.LoadAsync(path);
-                R_Handle.Add(path, request);
-                R_ReferenceCount[path] = 0;
-                R_TypeDic[path] = type;
-                request.completed += obj => callback?.Invoke(request.asset);
-            }
         }
 
         protected static void ResourcesLoad<T>(string path, Action<T> callback) where T : Object
@@ -165,12 +144,11 @@ namespace Framwork
                 request = Resources.LoadAsync<T>(path);
                 R_Handle.Add(path, request);
                 R_ReferenceCount[path] = 0;
-                R_TypeDic[path] = typeof(T);
                 request.completed += obj => callback?.Invoke(request.asset as T);
             }
         }
 
-#if ADDRESSABLE
+#if ADDRESSABLES
         protected static void AddressablesLoad<T>(string path, Action<T> callback) where T : Object
         {
             if (A_Handles.TryGetValue(path, out AsyncOperationHandle handle))
