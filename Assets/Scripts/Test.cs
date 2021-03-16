@@ -17,22 +17,29 @@ public class Test : MonoBehaviour
         //assetGroup.Load(() =>
         //{
         //    box = GameObjectReference.Instantiate("box");
+        //    box1 = GameObjectReference.Instantiate("box");
         //    ObjectPool pool = new ObjectPool("circle", 0, default, AssetType.Resources);
-        //    GameObjectReference.Instantiate("circle", AssetType.Resources);
+        //    circle = GameObjectReference.Instantiate("circle", AssetType.Resources);
         //});
     }
 
     GameObject box;
+    GameObject box1;
+    GameObject circle;
 
     private void OnGUI()
     {
         if (GUILayout.Button("Remove"))
         {
-            AssetUtility.GetPrefabUtilitySelf<PrefabManager>().Unload();
+            GameObjectReference.Destroy(box);
         }
         if (GUILayout.Button("Remove"))
         {
-            GameObjectReference.Destroy(box);
+            GameObjectReference.Destroy(box1);
+        }
+        if (GUILayout.Button("Remove"))
+        {
+            GameObjectReference.Destroy(circle);
         }
 
         //if (GUILayout.Button("Info"))

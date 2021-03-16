@@ -192,30 +192,34 @@ namespace Framwork
             {
                 if (Linked.TryGetValue(item, out List<(string, AssetType)> link))
                 {
-                    for (int i = 0; i < link.Count; i++)
+                    if (SubReference(item.Item1, item.Item2))
                     {
-                        (string, AssetType) _item = link[i];
-                        for (int j = 0; j < InstanceDic.Count; j++)
+                        for (int i = 0; i < link.Count; i++)
                         {
-                            var linkInstance = InstanceDic.ElementAt(j);
-                            if (linkInstance.Value == _item)
+                            (string, AssetType) _item = link[i];
+                            for (int j = 0; j < InstanceDic.Count; j++)
                             {
-                                Destroy(linkInstance.Key);
-                                j--;
+                                var linkInstance = InstanceDic.ElementAt(j);
+                                if (linkInstance.Value == _item)
+                                {
+                                    Destroy(linkInstance.Key);
+                                    j--;
+                                }
                             }
-                        }
-                        for (int j = 0; j < PoolDic.Count; j++)
-                        {
-                            var linkPool = PoolDic.ElementAt(j);
-                            if (linkPool.Value == _item)
+                            for (int j = 0; j < PoolDic.Count; j++)
                             {
-                                linkPool.Key.Clear();
-                                j--;
+                                var linkPool = PoolDic.ElementAt(j);
+                                if (linkPool.Value == _item)
+                                {
+                                    linkPool.Key.Clear();
+                                    j--;
+                                }
                             }
                         }
                     }
                 }
-                SubReference(item.Item1, item.Item2);
+                else
+                    SubReference(item.Item1, item.Item2);
                 InstanceDic.Remove(obj);
             }
             Object.Destroy(obj);

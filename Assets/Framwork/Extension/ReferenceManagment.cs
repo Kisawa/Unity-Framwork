@@ -38,9 +38,8 @@ namespace Framwork
             }
         }
 
-        protected static void SubReference(string path, AssetType assetType)
+        protected static bool SubReference(string path, AssetType assetType)
         {
-            bool unload = false;
             switch (assetType)
             {
                 case AssetType.Resources:
@@ -53,7 +52,8 @@ namespace Framwork
                             R_Handle.Remove(path);
                         }
                         R_ReferenceCount.Remove(path);
-                        unload = true;
+                        UnlinkAsset(path, assetType);
+                        return true;
                     }
                     break;
 #if ADDRESSABLES
@@ -66,23 +66,13 @@ namespace Framwork
                             A_Handles.Remove(path);
                         }
                         A_ReferenceCount.Remove(path);
-                        unload = true;
+                        UnlinkAsset(path, assetType);
+                        return true;
                     }
                     break;
 #endif
             }
-            if (!unload)
-                return;
-            (string, AssetType) root = (path, assetType);
-            if (Linked.TryGetValue(root, out List<(string, AssetType)> link))
-            {
-                for (int i = 0; i < link.Count; i++)
-                {
-                    (string, AssetType) item = link[i];
-                    SubReference(item.Item1, item.Item2);
-                }
-                Linked.Remove(root);
-            }
+            return false;
         }
 
         protected static string CheckPath(Object obj, out AssetType assetType)
@@ -182,6 +172,20 @@ namespace Framwork
                     continue;
                 link.Add(_item);
                 AddReference(_item.Item1, _item.Item2);
+            }
+        }
+
+        protected static void UnlinkAsset(string path, AssetType assetType)
+        {
+            (string, AssetType) root = (path, assetType);
+            if (Linked.TryGetValue(root, out List<(string, AssetType)> link))
+            {
+                for (int i = 0; i < link.Count; i++)
+                {
+                    (string, AssetType) item = link[i];
+                    SubReference(item.Item1, item.Item2);
+                }
+                Linked.Remove(root);
             }
         }
     }
