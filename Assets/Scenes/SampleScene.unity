@@ -340,7 +340,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   FguiConfiguration: {fileID: 11400000, guid: 1f56bd82fc6b651419b46b94c9c1c3c6, type: 2}
-  useFgui: 1
+  useFgui: 0
   enterUITypeFullName: MainUI
   selectSingleFguiMask: 0
   selectNoSingleFguiMask: -1
@@ -350,7 +350,7 @@ MonoBehaviour:
   enterUIShowCallback:
     m_PersistentCalls:
       m_Calls: []
-  loadDataTable: 1
+  loadDataTable: 0
   dataTableIsNull: 0
   ignoreDataTableTypeNames: []
   loadSingleDataTableCallback:
@@ -359,7 +359,7 @@ MonoBehaviour:
   loadAllDataTableCallback:
     m_PersistentCalls:
       m_Calls: []
-  loadJsonData: 1
+  loadJsonData: 0
   jsonDataIsNull: 0
   ignoreJsonDataTypeNames: []
   loadSingleJsonDataCallback:

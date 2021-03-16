@@ -23,13 +23,14 @@ namespace Framwork
             GameObject parentObj = new GameObject(path + "_Group");
             parentObj.transform.localScale = groupScale == default ? Vector3.one : groupScale;
             Parent = parentObj.transform;
+            PoolDic.Add(this, (path, assetType));
             init(initCount);
         }
 
 #if ADDRESSABLES
         public ObjectPool(string path, int initCount = 0, Vector3 groupScale = default, AssetType assetType = AssetType.Addressables)
 #else
-        public ObjectPool(string path, int initCount = 0, Transform parent = null, Vector3 groupScale = default, AssetType assetType = AssetType.Resources)
+        public ObjectPool(string path, int initCount = 0, Vector3 groupScale = default, AssetType assetType = AssetType.Resources)
 #endif
         {
             this.path = path;
@@ -44,6 +45,7 @@ namespace Framwork
                     {
                         AddReference(path, assetType);
                         prefab = obj;
+                        PoolDic.Add(this, (path, assetType));
                         init(initCount);
                     });
                     break;
@@ -53,6 +55,7 @@ namespace Framwork
                     {
                         AddReference(path, assetType);
                         prefab = obj;
+                        PoolDic.Add(this, (path, assetType));
                         init(initCount);
                     });
                     break;
@@ -134,6 +137,7 @@ namespace Framwork
 
         public void Clear()
         {
+            PoolDic.Remove(this);
             DestroyAll();
             SubReference(path, assetType);
             prefab = null;
@@ -329,7 +333,6 @@ namespace Framwork
         {
             T instance = new T();
             instance.Init(sender);
-            instance.Disable();
             objects.Add(instance);
             return instance;
         }

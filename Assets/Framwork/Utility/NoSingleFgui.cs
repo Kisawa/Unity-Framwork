@@ -4,11 +4,5 @@ using UnityEngine;
 
 namespace Framwork
 {
-    public abstract class NoSingleFgui : FguiUtility
-    {
-        public void ShowSelf()
-        {
-            Show();
-        }
-    }
+    public abstract class NoSingleFgui : FguiUtility { }
 }

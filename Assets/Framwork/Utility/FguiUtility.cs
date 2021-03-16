@@ -27,20 +27,20 @@ namespace Framwork
             EnterUI.GetChild("btnClose")?.asButton.onClick.Add(() => Hide());
         }
 
-        protected virtual void Show(object sender = null)
+        public virtual void Show(object sender = null)
         {
             GRoot.inst.AddChild(EnterUI);
             EnterUI.visible = true;
             IsActive = true;
         }
 
-        protected virtual void Hide()
+        public virtual void Hide()
         {
             EnterUI.visible = false;
             IsActive = false;
         }
 
-        protected virtual void Destroy()
+        public virtual void Destroy()
         {
             GRoot.inst.RemoveChild(EnterUI);
             UnityEngine.Object.Destroy(EnterUI.displayObject.gameObject);
@@ -54,6 +54,12 @@ namespace Framwork
             Init(sender);
             if (justShow)
                 Show(sender);
+        }
+
+        protected void CreateSelf(object sender, bool justShow)
+        {
+            if(EnterUI == null)
+                Created(UIPackage.CreateFguiObject(PackName, EnterUIName), sender, justShow);
         }
 
         public static void InitFgui<T>(object sender = null, Action<T> callback = null) where T : SingleFgui, new()

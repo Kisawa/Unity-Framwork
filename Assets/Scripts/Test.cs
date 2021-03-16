@@ -17,14 +17,12 @@ public class Test : MonoBehaviour
         //assetGroup.Load(() =>
         //{
         //    box = GameObjectReference.Instantiate("box");
-        //    circle = GameObjectReference.Instantiate("circle", AssetType.Resources);
+        //    ObjectPool pool = new ObjectPool("circle", 0, default, AssetType.Resources);
         //    GameObjectReference.Instantiate("circle", AssetType.Resources);
         //});
-        //ReferenceManagment.LinkAsset("box", AssetType.Addressables, ("circle", AssetType.Resources));
     }
 
     GameObject box;
-    GameObject circle;
 
     private void OnGUI()
     {
@@ -37,7 +35,7 @@ public class Test : MonoBehaviour
             GameObjectReference.Destroy(box);
         }
 
-        if (GUILayout.Button("Info"))
-            ReferenceManagment.DebugInfo();
+        //if (GUILayout.Button("Info"))
+        //    ReferenceManagment.DebugInfo();
     }
 }

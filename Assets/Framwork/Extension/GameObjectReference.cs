@@ -8,8 +8,6 @@ namespace Framwork
 {
     public sealed class GameObjectReference : ReferenceManagment
     {
-        static Dictionary<GameObject, (string, AssetType)> pathDic = new Dictionary<GameObject, (string, AssetType)>();
-
 #if ADDRESSABLES
         public static void LoadGameObjectAsync(string path, Action<GameObject> callback, AssetType assetType = AssetType.Addressables)
 #else
@@ -39,7 +37,7 @@ namespace Framwork
             if (gameObject == null)
                 throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
             GameObject instance = Object.Instantiate(gameObject);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -54,7 +52,7 @@ namespace Framwork
             if (gameObject == null)
                 throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
             GameObject instance = Object.Instantiate(gameObject, parent);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -69,7 +67,7 @@ namespace Framwork
             if (gameObject == null)
                 throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
             GameObject instance = Object.Instantiate(gameObject, pos, rotation);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -84,7 +82,7 @@ namespace Framwork
             if (gameObject == null)
                 throw new NullReferenceException($"GameObjectReference: {assetType} \"{path}\" dont load");
             GameObject instance = Object.Instantiate(gameObject, pos, rotation, parent);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -93,7 +91,7 @@ namespace Framwork
         {
             GameObject instance = Object.Instantiate(prefab);
             string path = CheckPath(prefab, out AssetType assetType);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -102,7 +100,7 @@ namespace Framwork
         {
             GameObject instance = Object.Instantiate(prefab, parent);
             string path = CheckPath(prefab, out AssetType assetType);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -111,7 +109,7 @@ namespace Framwork
         {
             GameObject instance = Object.Instantiate(prefab, pos, rotation);
             string path = CheckPath(prefab, out AssetType assetType);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -120,7 +118,7 @@ namespace Framwork
         {
             GameObject instance = Object.Instantiate(prefab, pos, rotation, parent);
             string path = CheckPath(prefab, out AssetType assetType);
-            pathDic[instance] = (path, assetType);
+            InstanceDic[instance] = (path, assetType);
             AddReference(path, assetType);
             return instance;
         }
@@ -134,7 +132,7 @@ namespace Framwork
             LoadGameObjectAsync(path, obj =>
             {
                 GameObject instance = Object.Instantiate(obj);
-                pathDic[instance] = (path, assetType);
+                InstanceDic[instance] = (path, assetType);
                 AddReference(path, assetType);
                 callbcak?.Invoke(instance);
             }, assetType);
@@ -149,7 +147,7 @@ namespace Framwork
             LoadGameObjectAsync(path, obj =>
             {
                 GameObject instance = Object.Instantiate(obj, parent);
-                pathDic[instance] = (path, assetType);
+                InstanceDic[instance] = (path, assetType);
                 AddReference(path, assetType);
                 callbcak?.Invoke(instance);
             }, assetType);
@@ -164,7 +162,7 @@ namespace Framwork
             LoadGameObjectAsync(path, obj =>
             {
                 GameObject instance = Object.Instantiate(obj, pos, rotation);
-                pathDic[instance] = (path, assetType);
+                InstanceDic[instance] = (path, assetType);
                 AddReference(path, assetType);
                 callbcak?.Invoke(instance);
             }, assetType);
@@ -179,7 +177,7 @@ namespace Framwork
             LoadGameObjectAsync(path, obj =>
             {
                 GameObject instance = Object.Instantiate(obj, pos, rotation, parent);
-                pathDic[instance] = (path, assetType);
+                InstanceDic[instance] = (path, assetType);
                 AddReference(path, assetType);
                 callbcak?.Invoke(instance);
             }, assetType);
@@ -190,26 +188,35 @@ namespace Framwork
         {
             if (obj == null)
                 return;
-            if (pathDic.TryGetValue(obj, out (string, AssetType) item))
+            if (InstanceDic.TryGetValue(obj, out (string, AssetType) item))
             {
-                if (linked.TryGetValue(item, out List<(string, AssetType)> link))
+                if (Linked.TryGetValue(item, out List<(string, AssetType)> link))
                 {
                     for (int i = 0; i < link.Count; i++)
                     {
                         (string, AssetType) _item = link[i];
-                        for (int j = 0; j < pathDic.Count; j++)
+                        for (int j = 0; j < InstanceDic.Count; j++)
                         {
-                            var linkInstance = pathDic.ElementAt(j);
+                            var linkInstance = InstanceDic.ElementAt(j);
                             if (linkInstance.Value == _item)
                             {
                                 Destroy(linkInstance.Key);
                                 j--;
                             }
                         }
+                        for (int j = 0; j < PoolDic.Count; j++)
+                        {
+                            var linkPool = PoolDic.ElementAt(j);
+                            if (linkPool.Value == _item)
+                            {
+                                linkPool.Key.Clear();
+                                j--;
+                            }
+                        }
                     }
                 }
                 SubReference(item.Item1, item.Item2);
-                pathDic.Remove(obj);
+                InstanceDic.Remove(obj);
             }
             Object.Destroy(obj);
         }

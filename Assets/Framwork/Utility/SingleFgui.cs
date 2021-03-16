@@ -4,8 +4,5 @@ using UnityEngine;
 
 namespace Framwork
 {
-    public abstract class SingleFgui : FguiUtility
-    {
-
-    }
+    public abstract class SingleFgui : FguiUtility { }
 }

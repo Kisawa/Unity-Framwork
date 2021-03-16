@@ -17,7 +17,9 @@ namespace Framwork
         static Dictionary<string, int> A_ReferenceCount = new Dictionary<string, int>();
         static Dictionary<string, AsyncOperationHandle> A_Handles = new Dictionary<string, AsyncOperationHandle>();
 #endif
-        protected static Dictionary<(string, AssetType), List<(string, AssetType)>> linked = new Dictionary<(string, AssetType), List<(string, AssetType)>>();
+        protected static Dictionary<(string, AssetType), List<(string, AssetType)>> Linked = new Dictionary<(string, AssetType), List<(string, AssetType)>>();
+        protected static Dictionary<GameObject, (string, AssetType)> InstanceDic = new Dictionary<GameObject, (string, AssetType)>();
+        protected static Dictionary<ObjectPool, (string, AssetType)> PoolDic = new Dictionary<ObjectPool, (string, AssetType)>();
 
         protected static void AddReference(string path, AssetType assetType)
         {
@@ -34,11 +36,6 @@ namespace Framwork
                     break;
 #endif
             }
-        }
-
-        public static void DebugInfo()
-        {
-            int i = 1;
         }
 
         protected static void SubReference(string path, AssetType assetType)
@@ -77,14 +74,14 @@ namespace Framwork
             if (!unload)
                 return;
             (string, AssetType) root = (path, assetType);
-            if (linked.TryGetValue(root, out List<(string, AssetType)> link))
+            if (Linked.TryGetValue(root, out List<(string, AssetType)> link))
             {
                 for (int i = 0; i < link.Count; i++)
                 {
                     (string, AssetType) item = link[i];
                     SubReference(item.Item1, item.Item2);
                 }
-                linked.Remove(root);
+                Linked.Remove(root);
             }
         }
 
@@ -173,10 +170,10 @@ namespace Framwork
             if (element == null || element.Length == 0)
                 return;
             (string, AssetType) item = (rootPath, rootAssetType);
-            if (!linked.TryGetValue((rootPath, rootAssetType), out List<(string, AssetType)> link))
+            if (!Linked.TryGetValue((rootPath, rootAssetType), out List<(string, AssetType)> link))
             {
                 link = new List<(string, AssetType)>();
-                linked.Add((rootPath, rootAssetType), link);
+                Linked.Add((rootPath, rootAssetType), link);
             }
             for (int i = 0; i < element.Length; i++)
             {
