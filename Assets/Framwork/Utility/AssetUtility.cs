@@ -20,7 +20,7 @@ namespace Framwork
         public void Load(Action<AssetUtility> callback = null)
         {
             StartInject();
-            FieldInfo[] fields = GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo[] fields = GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             int count = fields.Length + 1;
             Action action = () =>
             {
@@ -74,7 +74,7 @@ namespace Framwork
 
         public void Unload(bool refreshMemory = false)
         {
-            FieldInfo[] fields = GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo[] fields = GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             bool resource = false;
             for (int i = 0; i < fields.Length; i++)
             {

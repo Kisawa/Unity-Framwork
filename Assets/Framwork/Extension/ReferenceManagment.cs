@@ -77,6 +77,11 @@ namespace Framwork
 
         protected static string CheckPath(Object obj, out AssetType assetType)
         {
+            if (obj == null)
+            {
+                assetType = AssetType.Resources;
+                return "";
+            }
             foreach (var item in R_Handle)
             {
                 if (item.Value.asset == obj)
@@ -155,7 +160,7 @@ namespace Framwork
         }
 #endif
 
-        protected static void LinkAsset(string rootPath, AssetType rootAssetType, params (string, AssetType)[] element)
+        public static void LinkAsset(string rootPath, AssetType rootAssetType, params (string, AssetType)[] element)
         {
             if (element == null || element.Length == 0)
                 return;

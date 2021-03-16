@@ -1835,7 +1835,7 @@ namespace Framwork
                 List<string> names = new List<string>();
                 List<Type> types = new List<Type>();
                 List<string> paths = new List<string>();
-                FieldInfo[] fields = item.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                FieldInfo[] fields = item.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
                 for (int j = 0; j < fields.Length; j++)
                 {
                     FieldInfo field = fields[j];

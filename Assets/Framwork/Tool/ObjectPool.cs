@@ -8,6 +8,7 @@ namespace Framwork
 {
     public class ObjectPool : ReferenceManagment
     {
+        public bool Null { get; private set; }
         public Transform Parent { get; private set; }
 
         GameObject prefab;
@@ -145,6 +146,7 @@ namespace Framwork
             if (Parent != null)
                 Object.Destroy(Parent.gameObject);
             Parent = null;
+            Null = true;
         }
 
         public bool Check(PoolCheck poolCheck)

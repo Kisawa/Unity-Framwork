@@ -12,7 +12,7 @@ public class PrefabManager : AssetUtility
     //ObjectPool box;
 
     [Resources("DataTable1")]
-    TextAsset dataTable1;
+    static TextAsset dataTable1;
 
     protected override void EndInject()
     {

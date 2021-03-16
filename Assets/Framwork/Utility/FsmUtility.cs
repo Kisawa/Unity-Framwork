@@ -42,17 +42,14 @@ namespace Framwork
                     }
                 }
             }
-            if (fsms.Count > 0)
-            {
-                foreach (IFsm item in fsms.Values)
-                    item.Init(this);
-            }
         }
 
         protected virtual void Start()
         {
             if (fsms.Count > 0)
             {
+                foreach (IFsm item in fsms.Values)
+                    item.Init(this);
                 if (StartFsm != null)
                 {
                     StartFsm.Enter();
