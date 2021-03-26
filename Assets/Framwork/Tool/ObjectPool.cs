@@ -8,6 +8,7 @@ namespace Framwork
 {
     public class ObjectPool : ReferenceManagment
     {
+        public bool Ready => prefab != null;
         public bool Null { get; private set; }
         public Transform Parent { get; private set; }
 

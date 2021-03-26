@@ -36,6 +36,8 @@ namespace Framwork
                     {
                         ResourcesLoad<TextAsset>(TableAssetName, obj =>
                         {
+                            if (obj == null)
+                                throw new NullReferenceException($"DataTableUtility - Asset {TableAssetName} in {GetType().Name} is null");
                             AddReference(TableAssetName, AssetType.Resources);
                             StartInject();
                             InjectData(obj.text);
@@ -50,6 +52,8 @@ namespace Framwork
                     {
                         AddressablesLoad<TextAsset>(TableAssetName, obj =>
                         {
+                            if (obj == null)
+                                throw new NullReferenceException($"DataTableUtility - Asset {TableAssetName} in {GetType().Name} is null");
                             AddReference(TableAssetName, AssetType.Addressables);
                             StartInject();
                             InjectData(obj.text);

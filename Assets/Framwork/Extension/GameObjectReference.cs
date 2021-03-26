@@ -188,6 +188,7 @@ namespace Framwork
         {
             if (obj == null)
                 return;
+            UnlinkInstance(obj);
             if (InstanceDic.TryGetValue(obj, out (string, AssetType) item))
             {
                 if (Linked.TryGetValue(item, out List<(string, AssetType)> link))
@@ -202,8 +203,11 @@ namespace Framwork
                                 var linkInstance = InstanceDic.ElementAt(j);
                                 if (linkInstance.Value == _item)
                                 {
-                                    Destroy(linkInstance.Key);
-                                    j--;
+                                    if (CheckReference(linkInstance.Value.Item1, linkInstance.Value.Item2) < 1)
+                                    {
+                                        Destroy(linkInstance.Key);
+                                        j--;
+                                    }
                                 }
                             }
                             for (int j = 0; j < PoolDic.Count; j++)
@@ -211,8 +215,11 @@ namespace Framwork
                                 var linkPool = PoolDic.ElementAt(j);
                                 if (linkPool.Value == _item)
                                 {
-                                    linkPool.Key.Clear();
-                                    j--;
+                                    if (CheckReference(_item.Item1, _item.Item2) < 2)
+                                    {
+                                        linkPool.Key.Clear();
+                                        j--;
+                                    }
                                 }
                             }
                         }
@@ -225,16 +232,89 @@ namespace Framwork
             Object.Destroy(obj);
         }
 
-        public static void LinkAsset(GameObject root, params GameObject[] element)
+        static Dictionary<GameObject, int> g_referenceCount = new Dictionary<GameObject, int>();
+        static Dictionary<GameObject, List<GameObject>> g_linked = new Dictionary<GameObject, List<GameObject>>();
+        static Dictionary<ObjectPool, int> p_referenceCount = new Dictionary<ObjectPool, int>();
+        static Dictionary<GameObject, List<ObjectPool>> p_linked = new Dictionary<GameObject, List<ObjectPool>>();
+
+        public static void LinkInstance(GameObject root, params GameObject[] element)
         {
-            string rootPath = CheckPath(root, out AssetType rootAssetType);
-            (string, AssetType)[] elementItem = new (string, AssetType)[element.Length];
+            if (root == null)
+                return;
+            if (!g_linked.TryGetValue(root, out List<GameObject> linkInstance))
+            {
+                linkInstance = new List<GameObject>();
+                g_linked.Add(root, linkInstance);
+            }
             for (int i = 0; i < element.Length; i++)
             {
-                string elementPath = CheckPath(element[i], out AssetType elementAssetType);
-                elementItem[i] = (elementPath, elementAssetType);
+                GameObject el = element[i];
+                if (!linkInstance.Contains(el))
+                {
+                    linkInstance.Add(el);
+                    if (g_referenceCount.TryGetValue(el, out int reference))
+                        g_referenceCount[el] = reference + 1;
+                    else
+                        g_referenceCount.Add(el, 1);
+                }
             }
-            LinkAsset(rootPath, rootAssetType, elementItem);
+        }
+
+        public static void LinkInstance(GameObject root, params ObjectPool[] element)
+        {
+            if (root == null)
+                return;
+            if (!p_linked.TryGetValue(root, out List<ObjectPool> linkPool))
+            {
+                linkPool = new List<ObjectPool>();
+                p_linked.Add(root, linkPool);
+            }
+            for (int i = 0; i < element.Length; i++)
+            {
+                ObjectPool el = element[i];
+                if (!linkPool.Contains(el))
+                {
+                    linkPool.Add(el);
+                    if (p_referenceCount.TryGetValue(el, out int reference))
+                        p_referenceCount[el] = reference + 1;
+                    else
+                        p_referenceCount.Add(el, 1);
+                }
+            }
+        }
+
+        public static void UnlinkInstance(GameObject root)
+        {
+            if (root == null)
+                return;
+            if (g_linked.TryGetValue(root, out List<GameObject> linkInstance))
+            {
+                for (int i = 0; i < linkInstance.Count; i++)
+                {
+                    GameObject instance = linkInstance[i];
+                    int reference = --g_referenceCount[instance];
+                    if (reference < 1)
+                    {
+                        g_referenceCount.Remove(instance);
+                        Destroy(instance);
+                    }
+                }
+                g_linked.Remove(root);
+            }
+            if (p_linked.TryGetValue(root, out List<ObjectPool> linkPool))
+            {
+                for (int i = 0; i < linkPool.Count; i++)
+                {
+                    ObjectPool pool = linkPool[i];
+                    int reference = --p_referenceCount[pool];
+                    if (reference < 1)
+                    {
+                        p_referenceCount.Remove(pool);
+                        pool.Clear();
+                    }
+                }
+                p_linked.Remove(root);
+            }
         }
     }
 }

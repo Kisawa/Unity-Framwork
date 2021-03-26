@@ -21,6 +21,25 @@ namespace Framwork
         protected static Dictionary<GameObject, (string, AssetType)> InstanceDic = new Dictionary<GameObject, (string, AssetType)>();
         protected static Dictionary<ObjectPool, (string, AssetType)> PoolDic = new Dictionary<ObjectPool, (string, AssetType)>();
 
+        protected static int CheckReference(string path, AssetType assetType)
+        {
+            int reference = 0;
+            switch (assetType)
+            {
+                case AssetType.Resources:
+                    if (R_ReferenceCount.TryGetValue(path, out reference))
+                        return reference;
+                    break;
+#if ADDRESSABLES
+                case AssetType.Addressables:
+                    if (A_ReferenceCount.TryGetValue(path, out reference))
+                        return reference;
+                    break;
+#endif
+            }
+            return reference;
+        }
+
         protected static void AddReference(string path, AssetType assetType)
         {
             switch (assetType)
@@ -28,11 +47,15 @@ namespace Framwork
                 case AssetType.Resources:
                     if (R_ReferenceCount.ContainsKey(path))
                         R_ReferenceCount[path]++;
+                    else
+                        R_ReferenceCount.Add(path, 1);
                     break;
 #if ADDRESSABLES
                 case AssetType.Addressables:
                     if (A_ReferenceCount.ContainsKey(path))
                         A_ReferenceCount[path]++;
+                    else
+                        A_ReferenceCount.Add(path, 1);
                     break;
 #endif
             }

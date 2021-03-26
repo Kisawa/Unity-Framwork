@@ -197,10 +197,10 @@ namespace Framwork
             if (GUILayout.Button(useFguiProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Use Fgui:", "IN TitleText", GUILayout.Width(150)))
             {
                 useFguiProp.boolValue = !useFguiProp.boolValue;
-                viewDic["UseFguiBox"] = true;
+                viewDic["UseFguiBox"] = false;
             }
             if (!viewDic.TryGetValue("UseFguiBox", out bool view))
-                viewDic.Add("UseFguiBox", true);
+                viewDic.Add("UseFguiBox", false);
             if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
                 viewDic["UseFguiBox"] = !view;
             EditorGUILayout.EndHorizontal();
@@ -298,10 +298,10 @@ namespace Framwork
             if (GUILayout.Button(loadDataTableProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Load DataTable:", "IN TitleText", GUILayout.Width(150)))
             {
                 loadDataTableProp.boolValue = !loadDataTableProp.boolValue;
-                viewDic["LoadDataTableBox"] = true;
+                viewDic["LoadDataTableBox"] = false;
             }
             if (!viewDic.TryGetValue("LoadDataTableBox", out bool view))
-                viewDic.Add("LoadDataTableBox", true);
+                viewDic.Add("LoadDataTableBox", false);
             if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
                 viewDic["LoadDataTableBox"] = !view;
             EditorGUILayout.EndHorizontal();
@@ -383,10 +383,10 @@ namespace Framwork
             if (GUILayout.Button(loadJsonDataProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Load JsonData:", "IN TitleText", GUILayout.Width(150)))
             {
                 loadJsonDataProp.boolValue = !loadJsonDataProp.boolValue;
-                viewDic["LoadJsonDataBox"] = true;
+                viewDic["LoadJsonDataBox"] = false;
             }
             if (!viewDic.TryGetValue("LoadJsonDataBox", out bool view))
-                viewDic.Add("LoadJsonDataBox", true);
+                viewDic.Add("LoadJsonDataBox", false);
             if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
                 viewDic["LoadJsonDataBox"] = !view;
             EditorGUILayout.EndHorizontal();
@@ -468,10 +468,10 @@ namespace Framwork
             if (GUILayout.Button(injectLocalDataProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Inject LocalData:", "IN TitleText", GUILayout.Width(150)))
             {
                 injectLocalDataProp.boolValue = !injectLocalDataProp.boolValue;
-                viewDic["InjectLocalDataBox"] = true;
+                viewDic["InjectLocalDataBox"] = false;
             }
             if (!viewDic.TryGetValue("InjectLocalDataBox", out bool view))
-                viewDic.Add("InjectLocalDataBox", true);
+                viewDic.Add("InjectLocalDataBox", false);
             if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
                 viewDic["InjectLocalDataBox"] = !view;
             EditorGUILayout.EndHorizontal();
@@ -574,10 +574,10 @@ namespace Framwork
             if (GUILayout.Button(loadAssetProp.boolValue ? toggleOnContent : toggleContent, "IN TitleText", GUILayout.Width(20)) || GUILayout.Button("Load Asset:", "IN TitleText", GUILayout.Width(150)))
             {
                 loadAssetProp.boolValue = !loadAssetProp.boolValue;
-                viewDic["LoadAssetBox"] = true;
+                viewDic["LoadAssetBox"] = false;
             }
             if (!viewDic.TryGetValue("LoadAssetBox", out bool view))
-                viewDic.Add("LoadAssetBox", true);
+                viewDic.Add("LoadAssetBox", false);
             if (GUILayout.Button(view ? unfoldContent : foldContent, "IN TitleText", GUILayout.Width(20)))
                 viewDic["LoadAssetBox"] = !view;
             EditorGUILayout.EndHorizontal();

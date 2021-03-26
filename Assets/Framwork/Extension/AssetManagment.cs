@@ -64,6 +64,8 @@ namespace Framwork
             {
                 LoadAssetAsync<T>(path, obj =>
                 {
+                    if (obj == null)
+                        throw new NullReferenceException($"AssetManagment - {assetType} \"{path}\" is null");
                     AddReference(path, assetType);
                     callback?.Invoke(obj);
                 }, assetType);

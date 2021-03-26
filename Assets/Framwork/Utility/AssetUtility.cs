@@ -112,7 +112,7 @@ namespace Framwork
                 Resources.UnloadUnusedAssets();
         }
 
-        public static T GetPrefabUtilitySelf<T>() where T: AssetUtility
+        public static T GetAssetUtility<T>() where T: AssetUtility
         {
             PrefabUtilityDictionary.TryGetValue(typeof(T).Name, out AssetUtility utility);
             return utility as T;

@@ -34,6 +34,8 @@ namespace Framwork
                     {
                         ResourcesLoad<TextAsset>(JsonAssetName, obj =>
                         {
+                            if (obj == null)
+                                throw new NullReferenceException($"JsonDataUntility - Asset {JsonAssetName} in {GetType().Name} is null");
                             AddReference(JsonAssetName, AssetType.Resources);
                             StartInject();
                             inject(obj.text);
@@ -48,6 +50,8 @@ namespace Framwork
                     {
                         AddressablesLoad<TextAsset>(JsonAssetName, obj =>
                         {
+                            if (obj == null)
+                                throw new NullReferenceException($"JsonDataUntility - Asset {JsonAssetName} in {GetType().Name} is null");
                             AddReference(JsonAssetName, AssetType.Addressables);
                             StartInject();
                             inject(obj.text);
