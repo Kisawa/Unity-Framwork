@@ -18,12 +18,6 @@ public class PlayerData : LocalSaveUtility
     [DepthUnsafe]
     [WaitingFreeToSave("Family")]
     Dictionary<string, Person> Family;
-
-    protected override void Init()
-    {
-        base.Init();
-        Debug.LogError("PlayerData");
-    }
 }
 
 public class Message
