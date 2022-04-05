@@ -10,7 +10,7 @@
 
 · ui模块仅整理了fgui相关  项目自带一个fgui sdk
 
-   fgui主ui选择，它将在项目运行时加载：
+\tfgui主ui选择，它将在项目运行时加载：
   
    ![image](https://user-images.githubusercontent.com/71002504/161743816-a17ef5f5-f854-44aa-bca3-ff10cfe1f368.png)
   
