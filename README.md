@@ -19,6 +19,10 @@
 
 ![image](https://user-images.githubusercontent.com/71002504/163168124-9031518e-37ab-4f68-92d4-8e9d85f00764.png)  
 
-* fgui主ui选择，它将在项目运行时加载：  
+* 主UI选择，它将在项目运行时加载：  
 
-![image](https://user-images.githubusercontent.com/71002504/161743443-584f2d82-f426-43f3-8f5d-1137f46b0955.png)  
+![image](https://user-images.githubusercontent.com/71002504/163168918-4dc3dafe-8a93-4d1c-942a-748d0f187911.png)  
+
+* 选择游戏开始时便加载到内存的UI：
+
+![image](https://user-images.githubusercontent.com/71002504/163168810-e0b17e46-ff64-4b3f-b9ac-4bb9c00a9d61.png)  
