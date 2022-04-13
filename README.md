@@ -11,6 +11,10 @@
 ![image](https://user-images.githubusercontent.com/71002504/163158287-a966fe27-8179-4ea6-9979-b7e7505e76e5.png)  
 ****
 ## UI模块仅整理了fgui相关（项目自带一个fgui sdk）  
+* Fgui配置文件：  
+
+ ![image](https://user-images.githubusercontent.com/71002504/163169210-c808596b-2a1b-45a1-9a8b-64a4e7ed9d35.png)  
+ 
 * 全局唯一的UI类型，继承自SingleFgui，例如游戏主窗口：
 
 ![image](https://user-images.githubusercontent.com/71002504/161743816-a17ef5f5-f854-44aa-bca3-ff10cfe1f368.png)  
