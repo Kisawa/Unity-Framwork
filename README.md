@@ -11,11 +11,11 @@
 ![image](https://user-images.githubusercontent.com/71002504/163158287-a966fe27-8179-4ea6-9979-b7e7505e76e5.png)  
 ****
 ## UI模块仅整理了fgui相关（项目自带一个fgui sdk）  
-* 全局唯一的UI类型，继承自SingleFgui：
+* 全局唯一的UI类型，继承自SingleFgui，例如游戏主窗口：
 
 ![image](https://user-images.githubusercontent.com/71002504/161743816-a17ef5f5-f854-44aa-bca3-ff10cfe1f368.png)  
 
-* 运行多次实例化的UI类型，继承自NoSingleFgui：
+* 允许多次实例化的UI类型，继承自NoSingleFgui，例如提示窗口：
 
 ![image](https://user-images.githubusercontent.com/71002504/163168124-9031518e-37ab-4f68-92d4-8e9d85f00764.png)  
 
