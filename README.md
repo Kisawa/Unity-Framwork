@@ -10,6 +10,12 @@
 
 ![image](https://user-images.githubusercontent.com/71002504/163158287-a966fe27-8179-4ea6-9979-b7e7505e76e5.png)  
 ****
+## 资源管理类  
+* 集合了Resources和Addressables两种模式  
+>使用Addressables  
+>>在PackageManager中安装Addressables  
+>>在ProjectSetting->Player->OtherSetting中添加全局Define：“ADDRESSABLES”  
+****
 ## UI模块仅整理了fgui相关（项目自带一个fgui sdk）  
 * Fgui配置文件：  
 >__CommonPackName：__   
