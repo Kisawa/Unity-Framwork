@@ -8,9 +8,8 @@
 ![image](https://user-images.githubusercontent.com/71002504/161743269-14b534f1-9a6a-4a65-81ed-4bb25ae3431a.png)  
 * 配置加载序列  
 
-![image](https://user-images.githubusercontent.com/71002504/163158287-a966fe27-8179-4ea6-9979-b7e7505e76e5.png)
-
-
+![image](https://user-images.githubusercontent.com/71002504/163158287-a966fe27-8179-4ea6-9979-b7e7505e76e5.png)  
+****
 ## ui模块仅整理了fgui相关（项目自带一个fgui sdk）  
 * fgui主ui选择，它将在项目运行时加载：  
 
