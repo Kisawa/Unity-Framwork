@@ -17,14 +17,18 @@
 >>在ProjectSetting->Player->OtherSetting中添加全局Define：“ADDRESSABLES”  
 
 * 自动管理资源的加载和释放  
->普通资源的加载与卸载使用__AssetManagment__类，例如Sprite TextAsset等  
->实例化物体以及销毁使用__GameObjectReference__类  
+>普通资源的加载与卸载，例如Sprite TextAsset等  
+>>__AssetManagment.cs__  
+
+>实例化物体以及销毁：  
+>>__GameObjectReference.cs__  
 
 * 资源的链结  
 链结主要用于资源的卸载，例如一个GameObject加载后它可能会使用其他Sprite资源，这个功能可以确保可能被使用的资源时刻在内存中共存
 >Asset与Asset：  
 >GameObject与Asset：  
 >>__AssetManagment.LinkAsset__  
+
 >GameObject与GameObject：  
 >GameObject与ObjectPool：  
 >>__GameObjectReference.LinkInstance__  
