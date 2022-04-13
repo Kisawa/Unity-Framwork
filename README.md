@@ -11,7 +11,7 @@
 ![image](https://user-images.githubusercontent.com/71002504/163158287-a966fe27-8179-4ea6-9979-b7e7505e76e5.png)  
 ****
 ## 资源管理类  
-* 集合了Resources和Addressables两种模式  
+* 集合了 __Resources__ 和 __Addressables__ 两种模式  
 >使用Addressables  
 >>在PackageManager中安装Addressables  
 >>在ProjectSetting->Player->OtherSetting中添加全局Define：“ADDRESSABLES”  
@@ -50,11 +50,11 @@
  ![image](https://user-images.githubusercontent.com/71002504/163169210-c808596b-2a1b-45a1-9a8b-64a4e7ed9d35.png)  
  ![image](https://user-images.githubusercontent.com/71002504/163169347-aa9d303b-0ffd-4e15-a303-99a31ad01152.png)  
  
-* 全局唯一的UI类型，继承自SingleFgui，例如游戏主窗口：
+* 全局唯一的UI类型，继承自 __SingleFgui__ ，例如游戏主窗口：
 
 ![image](https://user-images.githubusercontent.com/71002504/161743816-a17ef5f5-f854-44aa-bca3-ff10cfe1f368.png)  
 
-* 允许多次实例化的UI类型，继承自NoSingleFgui，例如提示窗口，可以配合IObjectPool接口作为对象池使用：
+* 允许多次实例化的UI类型，继承自 __NoSingleFgui__ ，例如提示窗口，可以配合IObjectPool接口作为对象池使用：
 
 ![image](https://user-images.githubusercontent.com/71002504/163168124-9031518e-37ab-4f68-92d4-8e9d85f00764.png)  
 
@@ -67,7 +67,11 @@
 ![image](https://user-images.githubusercontent.com/71002504/163168810-e0b17e46-ff64-4b3f-b9ac-4bb9c00a9d61.png)  
 ****
 ## DataTable数据表模块  
-用于数据表的加载，所有数据表需要导出为txt格式  
-表头等备注类型添加“#”作为注释行  
+* 用于数据表的加载，所有数据表需要导出为 __txt__ 格式，表头等备注类型添加 __“#”__ 作为注释行  
+
 ![image](https://user-images.githubusercontent.com/71002504/163183448-576f1c0e-62fd-4c10-a54a-6ba91b028cf6.png)
 ![image](https://user-images.githubusercontent.com/71002504/163183563-de4ab4f4-aca8-42c6-9827-6bc293dbb82a.png)  
+
+* 为数据表创建脚本，继承自 __DataTableUtility__ ：  
+
+![image](https://user-images.githubusercontent.com/71002504/163184317-3a5f56ef-4009-437e-a90e-29ab6da049ec.png)  
