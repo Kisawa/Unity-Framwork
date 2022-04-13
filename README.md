@@ -75,3 +75,7 @@
 * 为数据表创建脚本，继承自 __DataTableUtility__ ：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163184317-3a5f56ef-4009-437e-a90e-29ab6da049ec.png)  
+
+* 在项目入口的控制台可以控制表是否在开始时加载：  
+
+![image](https://user-images.githubusercontent.com/71002504/163184940-674da93a-65da-4ad0-bff8-333cefe05b45.png)  
