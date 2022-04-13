@@ -15,6 +15,19 @@
 >使用Addressables  
 >>在PackageManager中安装Addressables  
 >>在ProjectSetting->Player->OtherSetting中添加全局Define：“ADDRESSABLES”  
+
+* 自动管理资源的加载和释放  
+>普通资源的加载与卸载使用AssetManagment类，例如Sprite TextAsset等  
+>实例化物体以及销毁使用GameObjectReference类  
+
+* 资源的链结
+链结主要用于资源的卸载，例如一个GameObject加载后它可能会使用其他Sprite资源，这个功能可以确保可能被使用的资源时刻在内存中共存
+>Asset与Asset：  
+>GameObject与Asset：  
+>>AssetManagment.LinkAsset  
+>GameObject与GameObject：  
+>>GameObject与ObjectPool：  
+>>GameObjectReference.LinkInstance  
 ****
 ## UI模块仅整理了fgui相关（项目自带一个fgui sdk）  
 * Fgui配置文件：  
