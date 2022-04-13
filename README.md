@@ -23,7 +23,7 @@
 >实例化物体以及销毁：  
 >>__GameObjectReference.cs__  
 
-* 资源的__链结__  
+* 资源的链结  
 链结主要用于资源的卸载，例如一个GameObject加载后它可能会使用其他Sprite资源，这个功能可以确保可能被使用的资源时刻在内存中共存
 >Asset与Asset：  
 >GameObject与Asset：  
