@@ -91,4 +91,5 @@
 
 | Attribute | Type |
 | ------ | ------ |
-
+| JsonField | 普通类型，支持string, int, float等基础类型，以及Array, List列表类型 |
+| JsonFieldGroup | 自定义类型，支持class, struct |
