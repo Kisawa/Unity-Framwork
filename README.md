@@ -37,7 +37,7 @@
 使用它同时加载所有被链结资源，它会将Group中的资源一起打包加载并完成链结操作  
 ![image](https://user-images.githubusercontent.com/71002504/163180309-123116f3-6557-41d1-8214-e5e75c121b05.png)  
 ****
-## UI模块仅整理了fgui相关（项目自带一个fgui sdk）  
+## UI模块仅整理了Fgui相关（项目自带一个Fgui sdk）  
 * Fgui配置文件：  
 >__CommonPackName：__   
 >>Resources固定路径： Resources/FguiAssets/... （参考Fgui相关）  
@@ -65,3 +65,9 @@
 * 选择游戏开始时便加载到内存的UI：
 
 ![image](https://user-images.githubusercontent.com/71002504/163168810-e0b17e46-ff64-4b3f-b9ac-4bb9c00a9d61.png)  
+****
+## DataTable数据表模块  
+用于数据表的加载，所有数据表需要导出为txt格式  
+表头等备注类型添加“#”作为注释行  
+![image](https://user-images.githubusercontent.com/71002504/163183448-576f1c0e-62fd-4c10-a54a-6ba91b028cf6.png)
+![image](https://user-images.githubusercontent.com/71002504/163183563-de4ab4f4-aca8-42c6-9827-6bc293dbb82a.png)  
