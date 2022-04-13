@@ -13,12 +13,12 @@
 ## UI模块仅整理了fgui相关（项目自带一个fgui sdk）  
 * Fgui配置文件：  
 >__CommonPackName：__   
->>Resources固定路径： Resources/FguiAssets/...  （参考Fgui相关）
+>>Resources固定路径： Resources/FguiAssets/... （参考Fgui相关）  
 >>Addressables路径： Addressables资源配置名  
 
 >__FguiFontAssetName：__  
->>Resources路径： 完整路径名
->>Addressables路径： Addressables资源配置名
+>>Resources路径： 完整路径名  
+>>Addressables路径： Addressables资源配置名  
 
  ![image](https://user-images.githubusercontent.com/71002504/163169210-c808596b-2a1b-45a1-9a8b-64a4e7ed9d35.png)  
  ![image](https://user-images.githubusercontent.com/71002504/163169347-aa9d303b-0ffd-4e15-a303-99a31ad01152.png)  
