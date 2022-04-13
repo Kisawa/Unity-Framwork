@@ -1,13 +1,12 @@
 # Unity-Framwork
-此项目模块化了本人在游戏开发过程中程序向的各种工具
-仅为随笔方便日后查看
-
-资源管理方面 统一入口
-
-项目入口：
-
-![image](https://user-images.githubusercontent.com/71002504/161743269-14b534f1-9a6a-4a65-81ed-4bb25ae3431a.png)
-
+此项目模块化了本人在游戏开发过程中程序向的各种工具  
+仅为随笔方便日后查看  
+****
+## 项目入口：  
+这里集合了游戏开始时的加载资源  
+![image](https://user-images.githubusercontent.com/71002504/161743269-14b534f1-9a6a-4a65-81ed-4bb25ae3431a.png)  
+配置加载序列  
+![image](https://user-images.githubusercontent.com/71002504/163158287-a966fe27-8179-4ea6-9979-b7e7505e76e5.png)
 
 
 · ui模块仅整理了fgui相关  项目自带一个fgui sdk
