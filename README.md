@@ -76,7 +76,7 @@
 
 ![image](https://user-images.githubusercontent.com/71002504/163184317-3a5f56ef-4009-437e-a90e-29ab6da049ec.png)  
 
-* 在项目入口的控制台可以控制表是否在开始时加载：  
+* 在项目入口的控制台可以控制某一个DataTable表是否在开始时加载：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163184940-674da93a-65da-4ad0-bff8-333cefe05b45.png)  
 ****
@@ -93,3 +93,7 @@
 | ------ | ------ |
 | JsonField | 普通类型，支持string, int, float等基础类型，以及Array, List列表类型 |
 | JsonFieldGroup | 自定义类型，支持class, struct |
+
+* 在项目入口的控制台可以控制某一个Json表是否在开始时加载：  
+
+![image](https://user-images.githubusercontent.com/71002504/163192377-fd7fdffb-4de6-4861-952b-1f1eb947df56.png)  
