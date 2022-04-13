@@ -85,9 +85,9 @@
 
 * 为Json数据表创建脚本，继承自 __JsonDataUntility__ ：  
 
-![image](https://user-images.githubusercontent.com/71002504/163186023-4de0b392-5cc0-4db4-ba32-90e9d6e63dc1.png)  
+![image](https://user-images.githubusercontent.com/71002504/163191151-e35eb8e3-8902-4241-bb78-ec56417ffab6.png)  
 
-* 为脚本中的变量妥善选择特性，它会被识别为对象的Json对象并填充表数据：
+* 为脚本中的变量妥善选择 __Attribute__ ，它会被识别为Json的数据对象并填充表数据：  
 | 特性 | 类型 |
 | ------ | ------ |
 | [JsonField] | 普通类型，支持string, int, float等基础类型，以及Array, List列表类型 |
