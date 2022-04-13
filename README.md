@@ -79,3 +79,16 @@
 * 在项目入口的控制台可以控制表是否在开始时加载：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163184940-674da93a-65da-4ad0-bff8-333cefe05b45.png)  
+****
+## Json数据表模块  
+![image](https://user-images.githubusercontent.com/71002504/163185984-1549010e-7d34-4edb-b5fe-a47389cb9399.png)  
+
+* 为Json数据表创建脚本，继承自 __JsonDataUntility__ ：  
+
+![image](https://user-images.githubusercontent.com/71002504/163186023-4de0b392-5cc0-4db4-ba32-90e9d6e63dc1.png)  
+
+* 为脚本中的变量妥善选择特性，它会被识别为对象的Json对象并填充表数据：
+| 特性 | 类型 |
+| ------ | ------ |
+| [JsonField] | 普通类型，支持string, int, float等基础类型，以及Array, List列表类型 |
+| [JsonFieldGroup] | 自定义类型，支持class, struct |
