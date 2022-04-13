@@ -88,6 +88,6 @@
 ![image](https://user-images.githubusercontent.com/71002504/163191151-e35eb8e3-8902-4241-bb78-ec56417ffab6.png)  
 
 * 为脚本中的变量妥善选择 __Attribute__ ，添加特性的变量会被识别为Json的数据对象并填充表数据：  
-| 特性 | 类型 |
+| Attribute | Type |
 | ------ | ------ |
 
