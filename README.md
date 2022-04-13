@@ -32,6 +32,9 @@
 >GameObject与GameObject：  
 >GameObject与ObjectPool：  
 >>__GameObjectReference.LinkInstance__  
+
+* AssetGroup.cs 使用它同时加载所有被链结资源，它会将Group中的资源一起打包加载并完成链结操作  
+![image](https://user-images.githubusercontent.com/71002504/163180309-123116f3-6557-41d1-8214-e5e75c121b05.png)  
 ****
 ## UI模块仅整理了fgui相关（项目自带一个fgui sdk）  
 * Fgui配置文件：  
