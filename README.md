@@ -90,5 +90,4 @@
 * 为脚本中的变量妥善选择 __Attribute__ ，添加特性的变量会被识别为Json的数据对象并填充表数据：  
 | 特性 | 类型 |
 | ------ | ------ |
-| JsonField | 普通类型，支持string, int, float等基础类型，以及Array, List列表类型 |
-| JsonFieldGroup | 自定义类型，支持class, struct |
+
