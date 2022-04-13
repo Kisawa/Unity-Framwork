@@ -14,6 +14,7 @@
 * Fgui配置文件：  
 
  ![image](https://user-images.githubusercontent.com/71002504/163169210-c808596b-2a1b-45a1-9a8b-64a4e7ed9d35.png)  
+ ![image](https://user-images.githubusercontent.com/71002504/163169347-aa9d303b-0ffd-4e15-a303-99a31ad01152.png)  
  
 * 全局唯一的UI类型，继承自SingleFgui，例如游戏主窗口：
 
