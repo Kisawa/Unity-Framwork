@@ -106,3 +106,11 @@
 * 为本地数据创建脚本，继承自 __LocalSaveUtility__ ：
 
 ![image](https://user-images.githubusercontent.com/71002504/163323119-9c5fc574-515c-4be4-85f3-75fc4473dd50.png)  
+
+* 为脚本中你想要保存的数据变量添加 __Attribute__ ，下面列出了相关的特性：
+
+| Attribute | Description |
+| ------ | ------ |
+| WaitingFreeToSave(name) | 标记需要被保存的变量（键值对方式 name -> key） |
+| Unsafe | 配合WaitingFreeToSave使用，标记此变量需要保存内部私有属性 |
+| DepthUnsafe | 配合WaitingFreeToSave使用，类似Unsafe，在变量内部查找是否存在Unsafe特性 |
