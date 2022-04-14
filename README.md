@@ -100,15 +100,15 @@
 ****
 ## 本地数据模块
 * 本地序列化数据在 __EasySave3__ 的基础上扩展了使用方法：  
->扩展了相关继承类，Runtime直接使用其中的变量并会在空闲以及结束时对其更新
+>扩展了相关继承类，Runtime直接使用其中的变量并会在空闲以及结束时对其更新  
 >使用 __Attribute（WaitingFreeToSave）__ 标记数据，实现自动保存与加载  
 >扩展了对私有变量 __private__ 的存储  
 
-* 为本地数据创建脚本，继承自 __LocalSaveUtility__ ：
+* 为本地数据创建脚本，继承自 __LocalSaveUtility__ ：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163323119-9c5fc574-515c-4be4-85f3-75fc4473dd50.png)  
 
-* 为脚本中你想要保存的数据变量添加 __Attribute__ ，下面列出了相关的特性：
+* 为脚本中你想要保存的数据变量添加 __Attribute__ ，下面列出了相关的特性：  
 
 | Attribute | Description |
 | ------ | ------ |
