@@ -109,7 +109,7 @@
 
 ![image](https://user-images.githubusercontent.com/71002504/163330640-8739e8e2-e13a-4b07-b2ab-51b1d7a01d9c.png)  
 
-* 项目入口的控制台查看与修改本地数据：  
+* 项目入口的控制台查看与修改本地数据，支持私有变量以及自定义类，Dictionary的查看：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163327276-4c98c0f9-1c3a-43ee-8052-c0934a258ee9.png)  
 
