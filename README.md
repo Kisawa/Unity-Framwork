@@ -107,7 +107,7 @@
 
 * 为本地数据创建脚本，继承自 __LocalSaveUtility__ ：  
 
-![image](https://user-images.githubusercontent.com/71002504/163323119-9c5fc574-515c-4be4-85f3-75fc4473dd50.png)  
+![image](https://user-images.githubusercontent.com/71002504/163330640-8739e8e2-e13a-4b07-b2ab-51b1d7a01d9c.png)  
 
 * 项目入口的控制台查看与修改本地数据：  
 
@@ -120,6 +120,10 @@
 | WaitingFreeToSave(name) | 标记需要被保存的变量（键值对方式 name -> key） |
 | Unsafe | 配合WaitingFreeToSave使用，标记此变量需要保存内部私有属性 |
 | DepthUnsafe | 配合WaitingFreeToSave使用，类似Unsafe，在变量内部查找是否存在Unsafe特性标记的属性 |
+
+* 清除本地数据  
+
+![image](https://user-images.githubusercontent.com/71002504/163330490-871da4d8-9515-49bc-8a26-814350919493.png)  
 
 * 解决Unity Il2cpp打包 __Reflection__ 反射报错的问题：  
 错报的原因在于对自定义struct类型的加载和保存，反射代码时程序没有找到相关引用  
