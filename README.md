@@ -151,3 +151,12 @@
 * 在项目入口的控制台可以控制某一个资源集合类是否在开始时加载：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163329751-c291c54c-5901-42dc-a0ad-60b9f940a87f.png)  
+****
+## ObjectPool对象池  
+* 对象池的类型有两种：  
+>GmaeObject的对象池：  
+>>![image](https://user-images.githubusercontent.com/71002504/163332148-51c1df59-2b1a-425b-b862-3404083de2ca.png)  
+
+>自定义的对象池，需要实现IObjectPool接口：
+>>![image](https://user-images.githubusercontent.com/71002504/163332637-9a6e70d7-6f1d-4881-bbf2-ca3693544522.png)  
+>>![image](https://user-images.githubusercontent.com/71002504/163332909-be89eeb8-8ff7-40b1-9aaf-30a0db6fb49e.png)  
