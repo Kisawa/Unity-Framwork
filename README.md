@@ -190,3 +190,8 @@ FsmUtility.cs继承自 __MonoBehaviour__ ，它具有Mono所有的行为：
 * 这里是两个不同的状态，实现 __IFsm__ 接口：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163338691-8c343ce9-1951-48bc-9a6d-d05c91f7925f.png)  
+***
+## Timer计时器
+* 挺方便的计时器，效率不错  
+
+![image](https://user-images.githubusercontent.com/71002504/163346381-804da283-0e61-4f19-80ef-4190111127da.png)  
