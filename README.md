@@ -127,4 +127,12 @@
 
 ![image](https://user-images.githubusercontent.com/71002504/163326224-5eae79a9-2c96-4274-9126-b923000f0171.png)  
 ****
-## GameStart自定义资源加载
+## GameStart自定义资源加载  
+* 游戏运行时需要同时加载的资源在这里标记，支持类型：  
+>Prefab Unity预制体  
+>UnityAsset Unity类型的资源，例如Sprite等  
+>ObjectPool Gameobject类型的对象池，自动为Prefab创建一个ObjectPool对象池  
+
+* 创建一个集合脚本，继承自 __AssetUtility.cs__ ：  
+
+![image](https://user-images.githubusercontent.com/71002504/163328471-564c33c1-8a24-4735-9fa5-cfde2fe82bc2.png)  
