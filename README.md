@@ -171,3 +171,22 @@ _自定义一个静态方法用于在引用池中取出一个事件实例，当�
 * 在适合的地方触发这个事件：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163336871-2de901a3-000e-49ad-abb4-cd2d2b4bcfed.png)  
+****
+## Fsm状态机
+* 创建一个状态机类，继承自 __FsmUtility.cs__  
+FsmUtility.cs继承自 __MonoBehaviour__ ，它具有Mono所有的行为：  
+
+![image](https://user-images.githubusercontent.com/71002504/163338550-bf58840c-87ed-435f-aece-835ee6ea0166.png)  
+
+>这个状态机类定义了两个不同的状态  
+>>IdleState  
+>>WalkState  
+
+>只需要在类中定义 实现了 __IFsm__ 接口的类  
+>它们会在 __FsmUtility.cs__ 的 __Awake__ 周期函数中自动反射实例化  
+>两种方法切换状态，可以在任意地方调用：  
+>>![image](https://user-images.githubusercontent.com/71002504/163340104-16e50dfe-d48a-46b0-91d0-e81a6e796ff0.png)  
+
+* 这里是两个不同的状态，实现 __IFsm__ 接口：  
+
+![image](https://user-images.githubusercontent.com/71002504/163338691-8c343ce9-1951-48bc-9a6d-d05c91f7925f.png)  
