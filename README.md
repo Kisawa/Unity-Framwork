@@ -97,3 +97,12 @@
 * 在项目入口的控制台可以控制某一个Json表是否在开始时加载：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163192377-fd7fdffb-4de6-4861-952b-1f1eb947df56.png)  
+****
+## 本地数据模块
+* 本地序列化数据在 __EasySave3__ 的基础上扩展了使用方法：  
+>使用 __Attribute（WaitingFreeToSave）__ 标记数据，实现自动保存与加载  
+>扩展了对私有变量 __private__ 的存储  
+
+* 为本地数据创建脚本，继承自 __LocalSaveUtility__ ：
+
+![image](https://user-images.githubusercontent.com/71002504/163323119-9c5fc574-515c-4be4-85f3-75fc4473dd50.png)  
