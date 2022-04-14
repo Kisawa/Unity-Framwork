@@ -113,4 +113,4 @@
 | ------ | ------ |
 | WaitingFreeToSave(name) | 标记需要被保存的变量（键值对方式 name -> key） |
 | Unsafe | 配合WaitingFreeToSave使用，标记此变量需要保存内部私有属性 |
-| DepthUnsafe | 配合WaitingFreeToSave使用，类似Unsafe，在变量内部查找是否存在Unsafe特性 |
+| DepthUnsafe | 配合WaitingFreeToSave使用，类似Unsafe，在变量内部查找是否存在Unsafe特性标记的属性 |
