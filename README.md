@@ -160,3 +160,11 @@
 >自定义的对象池，需要实现IObjectPool接口：
 >>![image](https://user-images.githubusercontent.com/71002504/163332637-9a6e70d7-6f1d-4881-bbf2-ca3693544522.png)  
 >>![image](https://user-images.githubusercontent.com/71002504/163332909-be89eeb8-8ff7-40b1-9aaf-30a0db6fb49e.png)  
+****
+## 全局事件 EventUtility 与引用池 ReferencePool
+* 创建一个事件，继承自 __EventUtility.cs__  
+EventUtility类实现了 __IReferencePool__ 引用池接口， 在接口方法的 __Recircle()__ 中重置事件参数
+自定义一个静态方法用于在引用池中取出一个事件实例，当然也可以在触发事件时手动实例化，对于会多次触发的事件使用引用池会更好：  
+
+![image](https://user-images.githubusercontent.com/71002504/163336336-f4742db1-b935-4b11-8f4c-9486701ffc89.png)  
+
