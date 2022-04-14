@@ -127,7 +127,7 @@
 
 ![image](https://user-images.githubusercontent.com/71002504/163326224-5eae79a9-2c96-4274-9126-b923000f0171.png)  
 ****
-## GameStart自定义资源加载  
+## GameStart自定义资源集合加载  
 * 游戏运行时需要同时加载的资源在这里标记，支持类型：  
 >Prefab： Unity预制体  
 >UnityAsset： Unity类型的资源，例如Sprite等  
