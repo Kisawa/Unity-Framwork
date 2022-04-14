@@ -103,10 +103,15 @@
 >扩展了相关继承类，Runtime直接使用其中的变量并会在空闲以及结束时对其更新  
 >使用 __Attribute（WaitingFreeToSave）__ 标记数据，实现自动保存与加载  
 >扩展了对私有变量 __private__ 的存储  
+>控制台数据可视化
 
 * 为本地数据创建脚本，继承自 __LocalSaveUtility__ ：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163323119-9c5fc574-515c-4be4-85f3-75fc4473dd50.png)  
+
+* 项目入口的控制台查看与修改本地数据：  
+
+![image](https://user-images.githubusercontent.com/71002504/163327276-4c98c0f9-1c3a-43ee-8052-c0934a258ee9.png)  
 
 * 为脚本中你想要保存的数据变量添加 __Attribute__ ，下面列出了相关的特性：  
 
@@ -121,3 +126,5 @@
 需要手动实现一下相关代码，参考 __Il2cppKeepCode.cs__ ，这里已经实现了对Unity常用struct类型的处理：  
 
 ![image](https://user-images.githubusercontent.com/71002504/163326224-5eae79a9-2c96-4274-9126-b923000f0171.png)  
+****
+## GameStart自定义资源加载
