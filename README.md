@@ -115,3 +115,9 @@
 | WaitingFreeToSave(name) | 标记需要被保存的变量（键值对方式 name -> key） |
 | Unsafe | 配合WaitingFreeToSave使用，标记此变量需要保存内部私有属性 |
 | DepthUnsafe | 配合WaitingFreeToSave使用，类似Unsafe，在变量内部查找是否存在Unsafe特性标记的属性 |
+
+* 解决Unity Il2cpp打包 __Reflection__ 反射报错的问题：  
+错报的原因在于对自定义struct类型的加载和保存，反射代码时程序没有找到相关引用  
+需要手动实现一下相关代码，参考 __Il2cppKeepCode.cs__ ，这里已经实现了对Unity常用struct类型的处理：  
+
+![image](https://user-images.githubusercontent.com/71002504/163326224-5eae79a9-2c96-4274-9126-b923000f0171.png)  
