@@ -19,7 +19,7 @@ public class JsonData1 : JsonDataUntility
     protected override void EndInject()
     {
         base.EndInject();
-        Debug.LogError("JsonData1" + "  " + label);
+        Debug.LogError("JsonData1 Load End");
     }
 }
 

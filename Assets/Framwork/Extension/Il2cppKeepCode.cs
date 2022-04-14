@@ -5,6 +5,7 @@
         public static void LocalSaveUtilityKeepCode()
         {
             ES3Reader reader = ES3.StartLoad();
+            #region Reader
             reader.TryToLoad("int", out int refer1);
             reader.TryToLoad("uint", out uint refer2);
             reader.TryToLoad("short", out short refer3);
@@ -31,7 +32,9 @@
             reader.TryToLoad("UnityRect", out UnityEngine.Rect refer24);
             reader.TryToLoad("UnityRectInt", out UnityEngine.RectInt refer25);
             reader.TryToLoad("UnityLayerMask", out UnityEngine.LayerMask refer26);
+            #endregion
             ES3Writer writer = ES3.StartSave();
+            #region Writer
             int _refer1 = 0;
             writer.ToSave<int>("int", _refer1);
             uint _refer2 = 0;
@@ -84,6 +87,7 @@
             writer.ToSave<UnityEngine.RectInt>("UnityRectInt", _refer25);
             UnityEngine.LayerMask _refer26 = default;
             writer.ToSave<UnityEngine.LayerMask>("UnityLayerMask", _refer26);
+            #endregion
         }
     }
 }

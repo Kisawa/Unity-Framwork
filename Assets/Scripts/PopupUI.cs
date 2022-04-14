@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Framwork;
 
-public class PlayerInfoUI : NoSingleFgui
+public class PopupUI : NoSingleFgui
 {
     public override string PackName => "PlayerInfoPack";
 

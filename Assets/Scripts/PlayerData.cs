@@ -9,7 +9,7 @@ public class PlayerData : LocalSaveUtility
     LayerMask mask;
 
     [WaitingFreeToSave("label")]
-    string label;
+    string label = "null";
 
     [Unsafe]
     [WaitingFreeToSave("message")]

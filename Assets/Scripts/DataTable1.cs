@@ -28,7 +28,7 @@ public class DataTable1 : DataTableUtility
     protected override void EndInject()
     {
         base.EndInject();
-        Debug.LogError("DataTable1" + "  " + Data[0].label);
+        Debug.LogError("DataTable1 Load End");
     }
 }
 
