@@ -168,3 +168,6 @@ _自定义一个静态方法用于在引用池中取出一个事件实例，当�
 
 ![image](https://user-images.githubusercontent.com/71002504/163336336-f4742db1-b935-4b11-8f4c-9486701ffc89.png)  
 
+* 在适合的地方触发这个事件：  
+
+![image](https://user-images.githubusercontent.com/71002504/163336871-2de901a3-000e-49ad-abb4-cd2d2b4bcfed.png)  
