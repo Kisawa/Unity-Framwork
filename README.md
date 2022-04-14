@@ -143,3 +143,7 @@
 | ------ | ------ |
 | Resources(path) | 标记此资源加载方式为 __Resources__ （path -> 路径） |
 | Addressables(path) | 标记此资源加载方式为 __Addressables__ （path -> 路径） |
+
+* 在项目入口的控制台可以控制某一个资源集合类是否在开始时加载：  
+
+![image](https://user-images.githubusercontent.com/71002504/163329751-c291c54c-5901-42dc-a0ad-60b9f940a87f.png)  
