@@ -16,7 +16,6 @@ namespace FairyGUI
 
         ScrollType _scrollType;
         float _scrollStep;
-        float _mouseWheelStep;
         float _decelerationRate;
         Margin _scrollBarMargin;
         bool _bouncebackEffect;
@@ -37,6 +36,7 @@ namespace FairyGUI
         bool _inertiaDisabled;
         bool _maskDisabled;
         bool _floating;
+        bool _dontClipMargin;
 
         float _xPos;
         float _yPos;
@@ -65,7 +65,7 @@ namespace FairyGUI
         Vector2 _tweenTime;
         Vector2 _tweenDuration;
 
-        EventCallback0 _refreshDelegate;
+        Action _refreshDelegate;
         TimerCallback _tweenUpdateDelegate;
         GTweenCallback1 _hideScrollBarDelegate;
 
@@ -83,14 +83,11 @@ namespace FairyGUI
         EventListener _onPullDownRelease;
         EventListener _onPullUpRelease;
 
-        EventListener _onTouchEnd; //扩展接触结束
-        public float OverlapX { get { return _overlapSize.x; } }
-        public float OverlapY { get { return _overlapSize.y; } }
         static int _gestureFlag;
 
-        const float TWEEN_TIME_GO = 0.5f; //调用SetPos(ani)时使用的缓动时间
-        const float TWEEN_TIME_DEFAULT = 0.3f; //惯性滚动的最小缓动时间
-        const float PULL_RATIO = 0.5f; //下拉过顶或者上拉过底时允许超过的距离占显示区域的比例
+        public static float TWEEN_TIME_GO = 0.3f; //调用SetPos(ani)时使用的缓动时间
+        public static float TWEEN_TIME_DEFAULT = 0.3f; //惯性滚动的最小缓动时间
+        public static float PULL_RATIO = 0.5f; //下拉过顶或者上拉过底时允许超过的距离占显示区域的比例
 
         public ScrollPane(GComponent owner)
         {
@@ -98,7 +95,6 @@ namespace FairyGUI
             _onScrollEnd = new EventListener(this, "onScrollEnd");
 
             _scrollStep = UIConfig.defaultScrollStep;
-            _mouseWheelStep = _scrollStep * 2;
             _softnessOnTopOrLeftSide = UIConfig.allowSoftnessOnTopOrLeftSide;
             _decelerationRate = UIConfig.defaultScrollDecelerationRate;
             _touchEffect = UIConfig.defaultScrollTouchEffect;
@@ -123,8 +119,6 @@ namespace FairyGUI
             _owner.rootContainer.onTouchBegin.Add(__touchBegin);
             _owner.rootContainer.onTouchMove.Add(__touchMove);
             _owner.rootContainer.onTouchEnd.Add(__touchEnd);
-
-            _onTouchEnd = new EventListener(this, "onTouchEnd");
         }
 
         public void Setup(ByteBuffer buffer)
@@ -161,6 +155,7 @@ namespace FairyGUI
             _inertiaDisabled = (flags & 256) != 0;
             _maskDisabled = (flags & 512) != 0;
             _floating = (flags & 1024) != 0;
+            _dontClipMargin = (flags & 2048) != 0;
 
             if (scrollBarDisplay == ScrollBarDisplayType.Default)
             {
@@ -238,12 +233,6 @@ namespace FairyGUI
                     _refreshBarAxis = (_scrollType == ScrollType.Both || _scrollType == ScrollType.Vertical) ? 1 : 0;
             }
 
-            if (!_maskDisabled && (_vtScrollBar != null || _hzScrollBar != null))
-            {
-                //当有滚动条对象时，为了避免滚动条变化时触发重新合批，这里给rootContainer也加上剪裁。但这可能会增加额外dc。
-                _owner.rootContainer.clipRect = new Rect(0, 0, _owner.width, _owner.height);
-            }
-
             SetSize(owner.width, owner.height);
         }
 
@@ -304,13 +293,7 @@ namespace FairyGUI
         {
             get { return _onPullUpRelease ?? (_onPullUpRelease = new EventListener(this, "onPullUpRelease")); }
         }
-        /// <summary>
-        /// 结束滑动。
-        /// </summary>
-        public EventListener OnTouchEnd
-        {
-            get { return _onTouchEnd ?? (_onTouchEnd = new EventListener(this, "onTouchEnd")); }
-        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -389,7 +372,6 @@ namespace FairyGUI
 
         /// <summary>
         /// 当调用ScrollPane.scrollUp/Down/Left/Right时，或者点击滚动条的上下箭头时，滑动的距离。
-        /// 鼠标滚轮触发一次滚动的距离设定为defaultScrollStep*2
         /// </summary>
         public float scrollStep
         {
@@ -399,7 +381,6 @@ namespace FairyGUI
                 _scrollStep = value;
                 if (_scrollStep == 0)
                     _scrollStep = UIConfig.defaultScrollStep;
-                _mouseWheelStep = _scrollStep * 2;
             }
         }
 
@@ -904,19 +885,22 @@ namespace FairyGUI
                 float bottom = _yPos + _viewSize.y;
                 if (setFirst || rect.y <= _yPos || rect.height >= _viewSize.y)
                 {
+                    if (!setFirst && rect.yMax >= bottom) //if an item size is large than viewSize, dont scroll
+                        return;
+
                     if (_pageMode)
                         this.SetPosY(Mathf.Floor(rect.y / _pageSize.y) * _pageSize.y, ani);
                     else
                         SetPosY(rect.y, ani);
                 }
-                else if (rect.y + rect.height > bottom)
+                else if (rect.yMax > bottom)
                 {
                     if (_pageMode)
                         this.SetPosY(Mathf.Floor(rect.y / _pageSize.y) * _pageSize.y, ani);
                     else if (rect.height <= _viewSize.y / 2)
                         SetPosY(rect.y + rect.height * 2 - _viewSize.y, ani);
                     else
-                        SetPosY(rect.y + rect.height - _viewSize.y, ani);
+                        SetPosY(rect.y + Mathf.Min(rect.height - _viewSize.y, 0), ani);
                 }
             }
             if (_overlapSize.x > 0)
@@ -924,18 +908,21 @@ namespace FairyGUI
                 float right = _xPos + _viewSize.x;
                 if (setFirst || rect.x <= _xPos || rect.width >= _viewSize.x)
                 {
+                    if (!setFirst && rect.xMax >= right) //if an item size is large than viewSize, dont scroll
+                        return;
+
                     if (_pageMode)
                         this.SetPosX(Mathf.Floor(rect.x / _pageSize.x) * _pageSize.x, ani);
                     SetPosX(rect.x, ani);
                 }
-                else if (rect.x + rect.width > right)
+                else if (rect.xMax > right)
                 {
                     if (_pageMode)
                         this.SetPosX(Mathf.Floor(rect.x / _pageSize.x) * _pageSize.x, ani);
                     else if (rect.width <= _viewSize.x / 2)
                         SetPosX(rect.x + rect.width * 2 - _viewSize.x, ani);
                     else
-                        SetPosX(rect.x + rect.width - _viewSize.x, ani);
+                        SetPosX(rect.x + Mathf.Min(rect.width - _viewSize.x, 0), ani);
                 }
             }
 
@@ -1222,6 +1209,19 @@ namespace FairyGUI
             {
                 _vScrollNone = _contentSize.y <= _viewSize.y;
                 _hScrollNone = _contentSize.x <= _viewSize.x;
+
+                if (_vtScrollBar != null && _hzScrollBar != null)
+                {
+                    if (!_hScrollNone)
+                        _vtScrollBar.height = _owner.height - _hzScrollBar.height - _scrollBarMargin.top - _scrollBarMargin.bottom;
+                    else
+                        _vtScrollBar.height = _owner.height - _scrollBarMargin.top - _scrollBarMargin.bottom;
+
+                    if (!_vScrollNone)
+                        _hzScrollBar.width = _owner.width - _vtScrollBar.width - _scrollBarMargin.left - _scrollBarMargin.right;
+                    else
+                        _hzScrollBar.width = _owner.width - _scrollBarMargin.left - _scrollBarMargin.right;
+                }
             }
 
             if (_vtScrollBar != null)
@@ -1248,6 +1248,13 @@ namespace FairyGUI
                     rect.width += _vtScrollBar.width;
                 if (_hScrollNone && _hzScrollBar != null)
                     rect.height += _hzScrollBar.height;
+                if (_dontClipMargin)
+                {
+                    rect.x -= _owner.margin.left;
+                    rect.width += (_owner.margin.left + _owner.margin.right);
+                    rect.y -= _owner.margin.top;
+                    rect.height += (_owner.margin.top + _owner.margin.bottom);
+                }
 
                 _maskContainer.clipRect = rect;
             }
@@ -1700,8 +1707,7 @@ namespace FairyGUI
                     FixDuration(1, oldChange.y);
                 }
             }
-          
-            _onTouchEnd.Call(Math.Abs(endPos.x / _overlapSize.x) );
+
             StartTween(2);
         }
 
@@ -1711,21 +1717,19 @@ namespace FairyGUI
                 return;
 
             InputEvent evt = context.inputEvent;
-            int delta = evt.mouseWheelDelta;
-            delta = Math.Sign(delta);
+            float delta = evt.mouseWheelDelta / Stage.devicePixelRatio;
+            if (_snapToItem && Mathf.Abs(delta) < 1)
+                delta = Mathf.Sign(delta);
+
             if (_overlapSize.x > 0 && _overlapSize.y == 0)
             {
-                if (_pageMode)
-                    SetPosX(_xPos + _pageSize.x * delta, false);
-                else
-                    SetPosX(_xPos + _mouseWheelStep * delta, false);
+                float step = _pageMode ? _pageSize.x : _scrollStep;
+                SetPosX(_xPos + step * delta, false);
             }
             else
             {
-                if (_pageMode)
-                    SetPosY(_yPos + _pageSize.y * delta, false);
-                else
-                    SetPosY(_yPos + _mouseWheelStep * delta, false);
+                float step = _pageMode ? _pageSize.y : _scrollStep;
+                SetPosY(_yPos + step * delta, false);
             }
         }
 
@@ -1948,7 +1952,14 @@ namespace FairyGUI
             {
                 float tmpX = -pos.x;
                 float tmpY = -pos.y;
-                _owner.GetSnappingPosition(ref tmpX, ref tmpY);
+                float xDir = 0;
+                float yDir = 0;
+                if (inertialScrolling)
+                {
+                    xDir = pos.x - _containerPos.x;
+                    yDir = pos.y - _containerPos.y;
+                }
+                _owner.GetSnappingPositionWithDir(ref tmpX, ref tmpY, xDir, yDir);
                 if (pos.x < 0 && pos.x > -_overlapSize.x)
                     pos.x = -tmpX;
                 if (pos.y < 0 && pos.y > -_overlapSize.y)
@@ -1986,7 +1997,7 @@ namespace FairyGUI
                 }
                 else //否则只需要页面的1/3，当然，需要考虑到左移和右移的情况
                 {
-                    if (delta > testPageSize * (change < 0 ? 0.3f : 0.7f))
+                    if (delta > testPageSize * (change < 0 ? UIConfig.defaultScrollPagingThreshold : (1 - UIConfig.defaultScrollPagingThreshold)))
                         page++;
                 }
 

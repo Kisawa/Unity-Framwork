@@ -2,6 +2,7 @@ using System;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("fieldOfView", "nearClipPlane", "farClipPlane", "renderingPath", "allowHDR", "orthographicSize", "orthographic", "opaqueSortMode", "transparencySortMode", "depth", "aspect", "cullingMask", "eventMask", "backgroundColor", "rect", "pixelRect", "worldToCameraMatrix", "projectionMatrix", "nonJitteredProjectionMatrix", "useJitteredProjectionMatrixForTransparentRendering", "clearFlags", "stereoSeparation", "stereoConvergence", "cameraType", "stereoTargetEye", "targetDisplay", "useOcclusionCulling", "cullingMatrix", "layerCullSpherical", "depthTextureMode", "clearStencilAfterLightingPass", "enabled", "hideFlags")]
 	public class ES3Type_Camera : ES3ComponentType
 	{
@@ -34,7 +35,6 @@ namespace ES3Types
 			writer.WriteProperty("backgroundColor", instance.backgroundColor);
 			writer.WriteProperty("rect", instance.rect);
 			writer.WriteProperty("pixelRect", instance.pixelRect);
-			writer.WriteProperty("worldToCameraMatrix", instance.worldToCameraMatrix);
 			writer.WriteProperty("projectionMatrix", instance.projectionMatrix);
 			writer.WriteProperty("nonJitteredProjectionMatrix", instance.nonJitteredProjectionMatrix);
 			writer.WriteProperty("useJitteredProjectionMatrixForTransparentRendering", instance.useJitteredProjectionMatrixForTransparentRendering);
@@ -45,7 +45,6 @@ namespace ES3Types
 			writer.WriteProperty("stereoTargetEye", instance.stereoTargetEye);
 			writer.WriteProperty("targetDisplay", instance.targetDisplay);
 			writer.WriteProperty("useOcclusionCulling", instance.useOcclusionCulling);
-			writer.WriteProperty("cullingMatrix", instance.cullingMatrix);
 			writer.WriteProperty("layerCullSpherical", instance.layerCullSpherical);
 			writer.WriteProperty("depthTextureMode", instance.depthTextureMode);
 			writer.WriteProperty("clearStencilAfterLightingPass", instance.clearStencilAfterLightingPass);
@@ -111,9 +110,6 @@ namespace ES3Types
 					case "pixelRect":
 						instance.pixelRect = reader.Read<UnityEngine.Rect>();
 						break;
-					case "worldToCameraMatrix":
-						instance.worldToCameraMatrix = reader.Read<UnityEngine.Matrix4x4>();
-						break;
 					case "projectionMatrix":
 						instance.projectionMatrix = reader.Read<UnityEngine.Matrix4x4>();
 						break;
@@ -143,9 +139,6 @@ namespace ES3Types
 						break;
 					case "useOcclusionCulling":
 						instance.useOcclusionCulling = reader.Read<System.Boolean>();
-						break;
-					case "cullingMatrix":
-						instance.cullingMatrix = reader.Read<UnityEngine.Matrix4x4>();
 						break;
 					case "layerCullSpherical":
 						instance.layerCullSpherical = reader.Read<System.Boolean>();

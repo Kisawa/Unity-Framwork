@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using FairyGUI.Utils;
 
 namespace FairyGUI
@@ -46,6 +47,11 @@ namespace FairyGUI
         //sound
         public NAudioClip audioClip;
 
+        //spine/dragonbones
+        public Vector2 skeletonAnchor;
+        public object skeletonAsset;
+        public HashSet<GLoader3D> skeletonLoaders;
+
         public object Load()
         {
             return owner.GetItemAsset(this);
@@ -67,7 +73,10 @@ namespace FairyGUI
         {
             if (highResolution != null && GRoot.contentScaleLevel > 0)
             {
-                string itemId = highResolution[GRoot.contentScaleLevel - 1];
+                int i = GRoot.contentScaleLevel - 1;
+                if (i >= highResolution.Length)
+                    i = highResolution.Length - 1;
+                string itemId = highResolution[i];
                 if (itemId != null)
                     return owner.GetItem(itemId);
             }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 using FairyGUI.Utils;
 
@@ -111,9 +111,7 @@ namespace FairyGUI
         float _scaleX;
         float _scaleY;
         int _sortingOrder;
-        bool _focusable;
         string _tooltips;
-        bool _pixelSnapping;
         GGroup _group;
 
         GearBase[] _gears;
@@ -135,6 +133,8 @@ namespace FairyGUI
         EventListener _onDragMove;
         EventListener _onDragEnd;
         EventListener _onGearStop;
+        EventListener _onFocusIn;
+        EventListener _onFocusOut;
 
         internal protected bool underConstruct;
         internal float _width;
@@ -304,6 +304,22 @@ namespace FairyGUI
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public EventListener onFocusIn
+        {
+            get { return _onFocusIn ?? (_onFocusIn = new EventListener(this, "onFocusIn")); }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public EventListener onFocusOut
+        {
+            get { return _onFocusOut ?? (_onFocusOut = new EventListener(this, "onFocusOut")); }
+        }
+
+        /// <summary>
         /// The x coordinate of the object relative to the local coordinates of the parent.
         /// </summary>
         public float x
@@ -417,14 +433,11 @@ namespace FairyGUI
             }
         }
 
+        [Obsolete("Use UIConfig.makePixelPerfect or DisplayObject.pixelPerfect")]
         public bool pixelSnapping
         {
-            get { return _pixelSnapping; }
-            set
-            {
-                _pixelSnapping = value;
-                HandlePositionChanged();
-            }
+            get { return false; }
+            set { }
         }
 
         /// <summary>
@@ -439,7 +452,7 @@ namespace FairyGUI
         /// Set the object in middle of the parent or GRoot if the parent is not set.
         /// </summary>
         /// <param name="restraint">Add relations to maintain the center state.</param>
-        public void Center(bool restraint)
+        public virtual void Center(bool restraint)
         {
             GComponent r;
             if (parent != null)
@@ -770,8 +783,7 @@ namespace FairyGUI
                 _pivotAsAnchor = asAnchor;
                 if (displayObject != null)
                     displayObject.pivot = new Vector2(_pivotX, _pivotY);
-                if (_pivotAsAnchor) //displayObject的轴心参考宽高与GObject的参看宽高不一样的情况下，需要调整displayObject的位置
-                    HandlePositionChanged();
+                HandlePositionChanged();
             }
         }
 
@@ -978,19 +990,25 @@ namespace FairyGUI
         /// </summary>
         public bool focusable
         {
-            get { return _focusable; }
-            set { _focusable = value; }
+            get { return displayObject != null && displayObject.focusable; }
+            set { if (displayObject != null) displayObject.focusable = value; }
         }
 
         /// <summary>
-        /// If the object is focused. Focused object can receive key events.
+        /// If the object can be navigated by TAB?
+        /// </summary>
+        public bool tabStop
+        {
+            get { return displayObject != null && displayObject.tabStop; }
+            set { if (displayObject != null) displayObject.tabStop = value; }
+        }
+
+        /// <summary>
+        /// If the object is focused. 
         /// </summary>
         public bool focused
         {
-            get
-            {
-                return this.root.focus == this;
-            }
+            get { return displayObject != null && displayObject.focused; }
         }
 
         /// <summary>
@@ -998,11 +1016,17 @@ namespace FairyGUI
         /// </summary>
         public void RequestFocus()
         {
-            GObject p = this;
-            while (p != null && !p._focusable)
-                p = p.parent;
-            if (p != null)
-                this.root.focus = p;
+            if (displayObject != null)
+                Stage.inst.SetFocus(displayObject, false);
+        }
+
+        /// <summary>
+        /// Request focus on this object.
+        /// </summary>
+        public void RequestFocus(bool byKey)
+        {
+            if (displayObject != null)
+                Stage.inst.SetFocus(displayObject, byKey);
         }
 
         /// <summary>
@@ -1025,6 +1049,21 @@ namespace FairyGUI
                     this.onRollOver.Add(__rollOver);
                     this.onRollOut.Add(__rollOut);
                 }
+            }
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <value></value>
+        public string cursor
+        {
+            get { return displayObject != null ? displayObject.cursor : null; }
+            set
+            {
+                if (displayObject != null)
+                    displayObject.cursor = value;
             }
         }
 
@@ -1082,7 +1121,7 @@ namespace FairyGUI
         /// <param name="obj"></param>
         public void SetHome(GObject obj)
         {
-            if (displayObject != null && obj.displayObject != null)
+            if (obj != null && displayObject != null && obj.displayObject != null)
                 displayObject.home = obj.displayObject.cachedTransform;
         }
 
@@ -1447,6 +1486,14 @@ namespace FairyGUI
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public Vector2 dragStartPos
+        {
+            get { return _dragTouchStartPos; }
+        }
+
+        /// <summary>
         /// Transforms a point from the local coordinate system to global (Stage) coordinates.
         /// </summary>
         /// <param name="pt"></param>
@@ -1523,8 +1570,8 @@ namespace FairyGUI
             if (r == null || r == GRoot.inst)
             {
                 //fast
-                pt.x /= GRoot.contentScaleFactor;
-                pt.y /= GRoot.contentScaleFactor;
+                pt.x /= UIContentScaler.scaleFactor;
+                pt.y /= UIContentScaler.scaleFactor;
                 return pt;
             }
             else
@@ -1542,8 +1589,8 @@ namespace FairyGUI
             if (r == null || r == GRoot.inst)
             {
                 //fast
-                pt.x *= GRoot.contentScaleFactor;
-                pt.y *= GRoot.contentScaleFactor;
+                pt.x *= UIContentScaler.scaleFactor;
+                pt.y *= UIContentScaler.scaleFactor;
             }
             else
                 pt = r.LocalToGlobal(pt);
@@ -1733,6 +1780,14 @@ namespace FairyGUI
         /// <summary>
         /// 
         /// </summary>
+        public GLoader3D asLoader3D
+        {
+            get { return this as GLoader3D; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public GList asList
         {
             get { return this as GList; }
@@ -1797,11 +1852,6 @@ namespace FairyGUI
                 {
                     xv += _width * _pivotX;
                     yv += _height * _pivotY;
-                }
-                if (_pixelSnapping)
-                {
-                    xv = (int)xv;
-                    yv = (int)yv;
                 }
                 displayObject.location = new Vector3(xv, yv, _z);
             }
@@ -1938,7 +1988,7 @@ namespace FairyGUI
             int cnt = buffer.ReadShort();
             for (int i = 0; i < cnt; i++)
             {
-                int nextPos = buffer.ReadShort();
+                int nextPos = buffer.ReadUshort();
                 nextPos += buffer.position;
 
                 GearBase gear = GetGear(buffer.ReadByte());
@@ -1974,6 +2024,9 @@ namespace FairyGUI
 
         private void DragBegin(int touchId)
         {
+            if (DispatchEvent("onDragStart", touchId))
+                return;
+
             if (draggingObject != null)
             {
                 GObject tmp = draggingObject;
@@ -2004,6 +2057,12 @@ namespace FairyGUI
 
         private void __touchBegin(EventContext context)
         {
+            if ((Stage.inst.focus is InputTextField) && ((InputTextField)Stage.inst.focus).editable)
+            {
+                _dragTesting = false;
+                return;
+            }
+
             InputEvent evt = context.inputEvent;
             _dragTouchStartPos = evt.position;
             _dragTesting = true;
@@ -2026,8 +2085,7 @@ namespace FairyGUI
                     return;
 
                 _dragTesting = false;
-                if (!DispatchEvent("onDragStart", evt.touchId))
-                    DragBegin(evt.touchId);
+                DragBegin(evt.touchId);
             }
 
             if (draggingObject == this)

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	internal class ES3ReflectedScriptableObjectType : ES3ScriptableObjectType
 	{
 		public ES3ReflectedScriptableObjectType(Type type) : base(type)

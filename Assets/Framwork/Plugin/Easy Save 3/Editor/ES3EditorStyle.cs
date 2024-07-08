@@ -6,9 +6,10 @@ namespace ES3Editor
 {
 	public class EditorStyle
 	{
-		public static EditorStyle style = null;
+		private static EditorStyle style = null;
 
 		public GUIStyle area;
+        public GUIStyle areaPadded;
 
 		public GUIStyle menuButton;
 		public GUIStyle menuButtonSelected;
@@ -24,6 +25,9 @@ namespace ES3Editor
 
 		public GUIStyle toggle;
 
+        public Texture2D saveIconSelected;
+        public Texture2D saveIconUnselected;
+
 		public static EditorStyle Get { get{ if(style == null) style = new EditorStyle(); return style; } }
 
 		public EditorStyle()
@@ -31,9 +35,15 @@ namespace ES3Editor
 			// An area with padding.
 			area = new GUIStyle();
 			area.padding = new RectOffset(10, 10, 10, 10);
+            area.wordWrap = true;
 
-			// Unselected menu button.
-			menuButton = new GUIStyle(EditorStyles.toolbarButton);
+            // An area with more padding.
+            areaPadded = new GUIStyle();
+            areaPadded.padding = new RectOffset(20, 20, 20, 20);
+            areaPadded.wordWrap = true;
+
+            // Unselected menu button.
+            menuButton = new GUIStyle(EditorStyles.toolbarButton);
 			menuButton.fontStyle = FontStyle.Normal;
 			menuButton.fontSize = 14;
 			menuButton.fixedHeight = 24;
@@ -43,7 +53,7 @@ namespace ES3Editor
 			menuButtonSelected.fontStyle = FontStyle.Bold;
 
 			// Main Headings
-			heading = new GUIStyle();
+			heading = new GUIStyle(EditorStyles.label);
 			heading.fontStyle = FontStyle.Bold;
 			heading.fontSize = 24;
 
@@ -59,10 +69,16 @@ namespace ES3Editor
 
 			link = new GUIStyle();
 			link.fontSize = 16;
-			link.normal.textColor = new Color(0.129f, 0.129f, 0.8f);
+			if(EditorGUIUtility.isProSkin)
+				link.normal.textColor = new Color (0.262f, 0.670f, 0.788f);
+			else
+				link.normal.textColor = new Color (0.129f, 0.129f, 0.8f);
 
 			toggle = new GUIStyle(EditorStyles.toggle);
 			toggle.stretchWidth = false;
-		}
+
+            saveIconSelected = AssetDatabase.LoadAssetAtPath<Texture2D>(ES3Settings.PathToEasySaveFolder() + "Editor/es3Logo16x16.png");
+            saveIconUnselected = AssetDatabase.LoadAssetAtPath<Texture2D>(ES3Settings.PathToEasySaveFolder() + "Editor/es3Logo16x16-bw.png");
+        }
 	}
 }

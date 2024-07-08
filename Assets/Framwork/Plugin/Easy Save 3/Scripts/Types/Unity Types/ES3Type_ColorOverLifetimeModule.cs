@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("enabled", "color")]
 	public class ES3Type_ColorOverLifetimeModule : ES3Type
 	{

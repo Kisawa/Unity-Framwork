@@ -14,6 +14,8 @@ namespace Framwork
 
         protected virtual bool IsBatching => true;
 
+        protected virtual bool MakeFullScreen => true;
+
         public GComponent EnterUI { get; private set; }
 
         public bool IsActive { get; private set; }
@@ -22,7 +24,8 @@ namespace Framwork
 
         protected virtual void Init(object sender = null)
         {
-            EnterUI.MakeFullScreen();
+            if (MakeFullScreen)
+                EnterUI.MakeFullScreen();
             EnterUI.fairyBatching = IsBatching;
             EnterUI.GetChild("btnClose")?.asButton.onClick.Add(() => Hide());
         }
@@ -34,7 +37,7 @@ namespace Framwork
             IsActive = true;
         }
 
-        public virtual void Hide()
+        public virtual void Hide(object sender = null)
         {
             EnterUI.visible = false;
             IsActive = false;
@@ -45,7 +48,6 @@ namespace Framwork
             GRoot.inst.RemoveChild(EnterUI);
             UnityEngine.Object.Destroy(EnterUI.displayObject.gameObject);
             FguiDictionary.Remove($"{PackName}.{EnterUIName}");
-            UIPackage.SubFguiPackageReference(PackName);
         }
 
         void Created(GObject obj, object sender, bool justShow = true)
@@ -56,17 +58,11 @@ namespace Framwork
                 Show(sender);
         }
 
-        protected void CreateSelf(object sender, bool justShow)
-        {
-            if(EnterUI == null)
-                Created(UIPackage.CreateFguiObject(PackName, EnterUIName), sender, justShow);
-        }
-
-        public static void InitFgui<T>(object sender = null, Action<T> callback = null) where T : SingleFgui, new()
+        public static void InitFgui<T>(object sender = null) where T : SingleFgui, new()
         {
             if (FramworkEntry.Self == null && FramworkEntry.Self.FguiConfiguration == null)
                 throw new NullReferenceException("FguiUtility: No fgui configuration.");
-            FguiConfiguration configuration = FramworkEntry.Self.FguiConfiguration;
+
             T t = new T();
             if (FguiDictionary.ContainsKey($"{t.PackName}.{t.EnterUIName}"))
             {
@@ -74,49 +70,40 @@ namespace Framwork
             }
             else
             {
-                UIPackage.CreateFguiObjectWithType(configuration.FguiAssetType, t.PackName, t.EnterUIName, (obj) => {
-                    t.Created(obj, sender, false);
-                    FguiDictionary.Add($"{t.PackName}.{t.EnterUIName}", t);
-                    callback?.Invoke(t);
-                });
+                AddPackage(t.PackName);
+                GObject obj = UIPackage.CreateObject(t.PackName, t.EnterUIName);
+                t.Created(obj, sender, false);
+                FguiDictionary.Add($"{t.PackName}.{t.EnterUIName}", t);
             }
         }
 
-        public static void ShowFgui<T>(object sender = null, Action<T> callback = null) where T : SingleFgui, new()
+        public static T ShowFgui<T>(object sender = null) where T : SingleFgui, new()
         {
             if (FramworkEntry.Self == null && FramworkEntry.Self.FguiConfiguration == null)
                 throw new NullReferenceException("FguiUtility: No fgui configuration.");
-            FguiConfiguration configuration = FramworkEntry.Self.FguiConfiguration;
             T t = new T();
             if (FguiDictionary.TryGetValue($"{t.PackName}.{t.EnterUIName}", out FguiUtility _t))
             {
                 _t.EnterUI.visible = true;
                 _t.Show(sender);
-                callback?.Invoke(_t as T);
+                return _t as T;
             }
             else
             {
-                UIPackage.CreateFguiObjectWithType(configuration.FguiAssetType, t.PackName, t.EnterUIName, (obj) => {
-                    if (FguiDictionary.TryGetValue($"{t.PackName}.{t.EnterUIName}", out FguiUtility _obj))
-                    {
-                        ShowFgui(sender, callback);
-                    }
-                    else
-                    {
-                        t.Created(obj, sender);
-                        FguiDictionary.Add($"{t.PackName}.{t.EnterUIName}", t);
-                        callback?.Invoke(t);
-                    }
-                });
+                AddPackage(t.PackName);
+                GObject obj = UIPackage.CreateObject(t.PackName, t.EnterUIName);
+                t.Created(obj, sender);
+                FguiDictionary.Add($"{t.PackName}.{t.EnterUIName}", t);
+                return t;
             }
         }
 
-        public static void HideFgui<T>() where T : SingleFgui, new()
+        public static void HideFgui<T>(object sender = null) where T : SingleFgui, new()
         {
             T t = new T();
             if (FguiDictionary.TryGetValue($"{t.PackName}.{t.EnterUIName}", out FguiUtility _t))
             {
-                _t.Hide();
+                _t.Hide(sender);
             }
         }
 
@@ -146,85 +133,48 @@ namespace Framwork
         public static T NewFgui<T>(bool justShow, object sender = null) where T : NoSingleFgui, new()
         {
             T t = new T();
-            t.Created(UIPackage.CreateFguiObject(t.PackName, t.EnterUIName), sender, justShow);
+            t.Created(UIPackage.CreateObject(t.PackName, t.EnterUIName), sender, justShow);
             return t;
         }
 
         public static void DestroyAllSingleFgui()
         {
             foreach (FguiUtility item in FguiDictionary.Values)
-            {
                 item.Destroy();
-                UIPackage.SubFguiPackageReference(item.PackName);
-            }
             FguiDictionary.Clear();
         }
 
         /// <summary>
         /// 加载Fgui公共资源包和语言文件
         /// </summary>
-        public static void LoadFguiConfig(Action callback = null)
+        public static void LoadFguiConfig()
         {
             if (FramworkEntry.Self == null && FramworkEntry.Self.FguiConfiguration == null)
                 throw new NullReferenceException("FguiUtility: No fgui configuration.");
             FguiConfiguration configuration = FramworkEntry.Self.FguiConfiguration;
-            int waitCount = 1;
-            Action action = () =>
-            {
-                if (--waitCount <= 0)
-                    callback?.Invoke();
-            };
+
             if (!string.IsNullOrEmpty(configuration.FguiFontAssetName))
                 UIConfig.defaultFont = configuration.FguiFontAssetName;
             GRoot.inst.SetContentScaleFactor(configuration.FguiDesignScreenSize.x, configuration.FguiDesignScreenSize.y, ScreenMatchMode.MatchWidthOrHeight);
+
             if (!string.IsNullOrEmpty(configuration.CommonPackName))
-            {
-                waitCount++;
-                UIPackage.AddPackageWithType(configuration.FguiAssetType, configuration.CommonPackName, (pkg) => { action(); });
-            }
+                AddPackage(configuration.CommonPackName);
+
             if (!string.IsNullOrEmpty(configuration.LanguageAssetName))
             {
-                waitCount++;
-                switch (configuration.FguiAssetType)
+                ResourcesLoad<TextAsset>(configuration.LanguageAssetName, obj =>
                 {
-                    case AssetType.Resources:
-                        ResourcesLoad<TextAsset>(configuration.LanguageAssetName, obj =>
-                        {
-                            AddReference(configuration.LanguageAssetName, AssetType.Resources);
-                            UIPackage.SetStringsSource(new FairyGUI.Utils.XML(obj.text));
-                            SubReference(configuration.LanguageAssetName, AssetType.Resources);
-                            action();
-                        });
-                        break;
-#if ADDRESSABLES
-                    case AssetType.Addressables:
-                        AddressablesLoad<TextAsset>(configuration.LanguageAssetName, obj =>
-                        {
-                            AddReference(configuration.LanguageAssetName, AssetType.Addressables);
-                            UIPackage.SetStringsSource(new FairyGUI.Utils.XML(obj.text));
-                            SubReference(configuration.LanguageAssetName, AssetType.Addressables);
-                            action();
-                        });
-                        break;
-#endif
-                }
+                    AddReference(configuration.LanguageAssetName, AssetType.Resources);
+                    UIPackage.SetStringsSource(new FairyGUI.Utils.XML(obj.text));
+                    SubReference(configuration.LanguageAssetName, AssetType.Resources);
+                });
             }
-            action.Invoke();
-        }
-
-        public static void InjectPackage<T>(Action<UIPackage> callback = null) where T : FguiUtility, new()
-        {
-            if (FramworkEntry.Self == null && FramworkEntry.Self.FguiConfiguration == null)
-                throw new NullReferenceException("FguiUtility: No fgui configuration.");
-            FguiConfiguration configuration = FramworkEntry.Self.FguiConfiguration;
-            T t = new T();
-            UIPackage.AddPackageWithType(configuration.FguiAssetType, t.PackName, callback);
         }
 
         /// <summary>
         /// 加载所有继承自FguiUtility并需要使用的Fgui包文件
         /// </summary>
-        public static void InjectAllPackage(FguiType fguiType, Action callback = null, int singleMask = -1, int noSingleMask = -1)
+        public static void InjectAllPackage(FguiType fguiType, int singleMask = -1, int noSingleMask = -1)
         {
             if (FramworkEntry.Self == null && FramworkEntry.Self.FguiConfiguration == null)
                 throw new NullReferenceException("FguiUtility: No fgui configuration.");
@@ -233,13 +183,7 @@ namespace Framwork
                 .SelectMany(x => x.GetTypes().Where(y => typeof(SingleFgui).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
             Type[] noSingleTypes = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(x => x.GetTypes().Where(y => typeof(NoSingleFgui).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
-            int packageCount = 1;
-            List<string> packageNames = new List<string>();
-            Action<UIPackage> action = (pkg) =>
-            {
-                if (--packageCount <= 0)
-                    callback?.Invoke();
-            };
+
             if (fguiType == FguiType.All || fguiType == FguiType.Single)
             {
                 for (int i = 0; i < singleTypes.Length; i++)
@@ -249,26 +193,10 @@ namespace Framwork
                         continue;
                     Type item = singleTypes[i];
                     string packageName = (Activator.CreateInstance(item) as FguiUtility).PackName;
-                    if (UIPackage.CheckPackageIsLoaded(packageName))
-                    {
-                        if (UIPackage.CheckPackageIsLoading(packageName))
-                        {
-                            packageCount++;
-                            UIPackage.AddPackageLoadedCallback(packageName, action);
-                        }
-                    }
-                    else
-                    {
-                        if (!packageNames.Contains(packageName))
-                        {
-                            packageNames.Add(packageName);
-                            packageCount++;
-                        }
-                    }
+                    AddPackage(packageName);
                 }
-                for (int i = 0; i < packageNames.Count; i++)
-                    UIPackage.AddPackageWithType(configuration.FguiAssetType, packageNames[i], action);
             }
+
             if (fguiType == FguiType.All || fguiType == FguiType.NoSingle)
             {
                 for (int i = 0; i < noSingleTypes.Length; i++)
@@ -278,27 +206,17 @@ namespace Framwork
                         continue;
                     Type item = noSingleTypes[i];
                     string packageName = (Activator.CreateInstance(item) as FguiUtility).PackName;
-                    if (UIPackage.CheckPackageIsLoaded(packageName))
-                    {
-                        if (UIPackage.CheckPackageIsLoading(packageName))
-                        {
-                            packageCount++;
-                            UIPackage.AddPackageLoadedCallback(packageName, action);
-                        }
-                    }
-                    else
-                    {
-                        if (!packageNames.Contains(packageName))
-                        {
-                            packageNames.Add(packageName);
-                            packageCount++;
-                        }
-                    }
+                    AddPackage(packageName);
                 }
-                for (int i = 0; i < packageNames.Count; i++)
-                    UIPackage.AddPackageWithType(configuration.FguiAssetType, packageNames[i], action);
             }
-            action.Invoke(null);
+        }
+
+        public static void AddPackage(string packageName)
+        {
+            if (FramworkEntry.Self == null && FramworkEntry.Self.FguiConfiguration == null)
+                throw new NullReferenceException("FguiUtility: No fgui configuration.");
+            FguiConfiguration configuration = FramworkEntry.Self.FguiConfiguration;
+            UIPackage.AddPackage($"{configuration.AssetsResourcesPath}/{packageName}");
         }
     }
 

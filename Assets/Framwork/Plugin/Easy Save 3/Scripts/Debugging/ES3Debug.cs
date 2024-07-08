@@ -1,70 +1,52 @@
-﻿/*using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-internal static class ES3Debug
+namespace ES3Internal
 {
-	public enum Category {GameObject, Component, Member, IO, Reflection, Other}
-	public static Category[] categories = new Category[]{Category.GameObject, Category.Component, Category.IO, Category.Member, Category.Other, Category.Reflection};
-	public static bool enabled = true;
+    internal static class ES3Debug
+    {
+        private const string disableInfoMsg = "\n<i>To disable these messages from Easy Save, go to Window > Easy Save 3 > Settings, and uncheck 'Log Info'</i>";
+        private const string disableWarningMsg = "\n<i>To disable warnings from Easy Save, go to Window > Easy Save 3 > Settings, and uncheck 'Log Warnings'</i>";
+        private const string disableErrorMsg = "\n<i>To disable these error messages from Easy Save, go to Window > Easy Save 3 > Settings, and uncheck 'Log Errors'</i>";
 
-	public static int indentLevel = 0;
-	private static string indentStr = "-";
+        private const char indentChar = '-';
 
+        public static void Log(string msg, Object context = null, int indent=0)
+        {
+            if (!ES3Settings.defaultSettingsScriptableObject.logDebugInfo)
+                return;
+            else if (context != null)
+                Debug.LogFormat(context, Indent(indent) + msg + disableInfoMsg);
+            else
+                Debug.LogFormat(context, Indent(indent) + msg);
+        }
 
-	public static void Log(string msg, Category category, int indent=0)
-	{
-		#if DEBUG
+        public static void LogWarning(string msg, Object context=null, int indent = 0)
+        {
+            if (!ES3Settings.defaultSettingsScriptableObject.logWarnings)
+                return;
+            else if (context != null)
+                Debug.LogWarningFormat(context, Indent(indent) + msg + disableWarningMsg);
+            else
+                Debug.LogWarningFormat(context, Indent(indent) + msg + disableWarningMsg);
+        }
 
-		if(!enabled || !CategoryIsEnabled(category))
-			return;
-		
-		Debug.Log(GetIndent() + msg);
-		indentLevel += indent;
+        public static void LogError(string msg, Object context = null, int indent = 0)
+        {
+            if (!ES3Settings.defaultSettingsScriptableObject.logErrors)
+                return;
+            else if (context != null)
+                Debug.LogErrorFormat(context, Indent(indent) + msg + disableErrorMsg);
+            else
+                Debug.LogErrorFormat(context, Indent(indent) + msg + disableErrorMsg);
+        }
 
-		#endif
-	}
-		
-	public static void LogError(string msg, Category category)
-	{
-		#if DEBUG
-		if(!enabled || ! CategoryIsEnabled(category))
-			return;
-
-		Debug.LogError(GetIndent() + msg);
-
-		#endif
-	}
-
-	public static void LogWarning(string msg, Category category)
-	{
-		#if DEBUG
-		if(!enabled || ! CategoryIsEnabled(category))
-			return;
-
-		Debug.LogWarning(GetIndent() + msg);
-
-		#endif
-	}
-
-	public static void ResetIndent()
-	{
-		indentLevel = 0;
-	}
-
-	private static string GetIndent()
-	{
-		string str = "";
-		for(int i = 0; i < indentLevel; i++)
-			str += indentStr;
-		return str;
-	}
-
-	private static bool CategoryIsEnabled(Category category)
-	{
-		for(int i = 0; i < categories.Length; i++)
-			if(categories[i] == category)
-				return true;
-		return false;
-	}
-}*/
+        private static string Indent(int size)
+        {
+            if (size < 0)
+                return "";
+            return new string(indentChar, size);
+        }
+    }
+}

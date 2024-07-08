@@ -24,9 +24,6 @@ if(!file_exists("ES3Variables.php"))
 
 include_once "ES3Variables.php";
 
-if($_POST["apiKey"] != $api_key)
-	Error("Incorrect API Key", "Incorrect API Key", 403);
-
 // Check connection to database.
 try
 {
@@ -36,6 +33,13 @@ catch(PDOException $e)
 {
 	Error("Could not connect to database.", $e->getMessage(), 501);
 }
+
+if(!isset($_POST["apiKey"]))
+	// Throw this message as an error so that if this is encountered via ES3Cloud it is put into an error state.
+	Error("ES3Cloud is functioning correctly.", "ES3Cloud is functioning correctly.", 403);
+
+if($_POST["apiKey"] != $api_key)
+	Error("Incorrect API Key", "Incorrect API Key", 403);
 
 // ----- GET FILE -----
 if(isset($_POST["getFile"]))
@@ -67,8 +71,12 @@ else if(isset($_POST["putFile"]))
 	$filePath = $_FILES["data"]["tmp_name"];
 	
 	// If file doesn't exist or it contains no data, throw an error.
-	if(!file_exists($filePath) || filesize($filePath) == 0)
-		Error("Uploaded file does not exist or is empty.", "Uploaded file does not exist or is empty.", 400);
+	if(!file_exists($filePath))
+		Error("Uploaded file does not exist.", "Uploaded file does not exist.", 400);
+	
+	// If file doesn't exist or it contains no data, throw an error.
+	if(filesize($filePath) == 0)
+		Error("Uploaded file is empty.", "Uploaded file is empty.", 400);
 	
 	$fp = fopen($filePath, 'rb');
 	
@@ -83,19 +91,19 @@ else if(isset($_POST["putFile"]))
 	$stmt->execute();
 }
 
-// ----- DELETE FILE -----
-else if(isset($_POST["deleteFile"]))
+// ----- RENAME FILE -----
+else if(isset($_POST["renameFile"]))
 {
-	$stmt = $db->prepare("UPDATE $tableName SET $filenameField = :newFilename WHERE $filenameField = :filename");
-	$stmt->bindParam(":filename", $_POST["deleteFile"]);
+	$stmt = $db->prepare("UPDATE $tableName SET $filenameField = :newFilename WHERE $filenameField = :filename AND $userField = :user");
+	$stmt->bindParam(":filename", $_POST["renameFile"]);
 	$stmt->bindParam(":newFilename", $_POST["newFilename"]);
 	$postUser = GetPOSTUser();
 	$stmt->bindParam(":user", $postUser);
 	$stmt->execute();
 }
 
-// ----- RENAME FILE -----
-else if(isset($_POST["renameFile"]))
+// ----- DELETE FILE -----
+else if(isset($_POST["deleteFile"]))
 {
 	
 	$stmt = $db->prepare("DELETE FROM $tableName WHERE $filenameField = :filename AND $userField = :user");
@@ -105,15 +113,30 @@ else if(isset($_POST["renameFile"]))
 	$stmt->execute();
 }
 
+// ----- GET FILENAMES WITH PATTERN -----
+else if(isset($_POST["getFilenames"]) && isset($_POST["pattern"]))
+{
+	echo "Here";
+	$stmt = $db->prepare("SELECT $filenameField FROM $tableName WHERE $userField = :user AND $filenameField LIKE :pattern");
+	$postUser = GetPOSTUser();
+	$stmt->bindParam(":user", $postUser);
+	$stmt->bindParam(":pattern", $_POST["pattern"]);
+	$stmt->execute();
+	$rows = $stmt->fetchAll();
+	foreach($rows as $row)
+		echo $row[$filenameField] . ";";
+}
+
 // ----- GET FILENAMES -----
 else if(isset($_POST["getFilenames"]))
 {
-	$stmt = $db->prepare("SELECT GROUP_CONCAT($filenameField SEPARATOR ';') FROM $tableName WHERE $userField = :user");
+	$stmt = $db->prepare("SELECT $filenameField FROM $tableName WHERE $userField = :user");
 	$postUser = GetPOSTUser();
 	$stmt->bindParam(":user", $postUser);
 	$stmt->execute();
-	if($stmt->rowCount() > 0)
-		echo $stmt->fetchColumn();
+	$rows = $stmt->fetchAll();
+	foreach($rows as $row)
+		echo $row[$filenameField] . ";";
 }
 
 // ----- GET TIMESTAMP -----
@@ -207,7 +230,7 @@ function Install($dbHost, $dbUser, $dbPassword, $dbName, $tableName, $filenameFi
 `$userField` varchar(64) NOT NULL,
 `$lastUpdatedField` int(11) unsigned NOT NULL DEFAULT '0',
 PRIMARY KEY (`$filenameField`,`$userField`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+) ENGINE=InnoDB COLLATE=utf8_unicode_ci CHARSET=utf8;";
 	        		$db->query($createTableQuery);
 	    	} 
 	    	catch (PDOException $e) 
@@ -219,20 +242,29 @@ PRIMARY KEY (`$filenameField`,`$userField`)
 	    	}
 	    }
     	
+    	
     	try
     	{
 	    	$apiKey = substr(md5(microtime()),rand(0,26),12);
-	    	$phpScript =
+	    	$phpScript = 
 "<?php
 \$api_key		=	'$apiKey';		// The API key you need to specify to use when accessing this API.
-
-\$db_host		= 	'$dbHost';		// MySQL Host Name.
-\$db_user		= 	'$dbUser';		// MySQL User Name.
-\$db_password		= 	'$dbPassword';	// MySQL Password.
-\$db_name		= 	'$dbName';		// MySQL Database Name.
+\$db_host		= 	'$dbHost';			// MySQL Host Name.
+\$db_user		= 	'$dbUser';			// MySQL User Name.
+\$db_password		= 	'$dbPassword';			// MySQL Password.
+\$db_name		= 	'$dbName';			// MySQL Database Name.
 ?>";
 	    	
-	    	file_put_contents("ES3Variables.php", $phpScript);
+	    	// Check that path is writable or file_put_contents is supported.
+	    	if(!function_exists("file_put_contents"))
+	    	{
+		    	ManuallyInstall($phpScript);
+		    	exit();
+	    	}
+	    	else
+	    	{
+	    		file_put_contents("ES3Variables.php", $phpScript);
+	    	}
     	}
     	catch(Exception $e)
     	{
@@ -266,7 +298,7 @@ PRIMARY KEY (`$filenameField`,`$userField`)
 
 function ManuallyInstall($phpScript)
 {
-		    	echo "	<p>Couldn't create PHP file on your server. Server returned the following error:</p><p>".$e->getMessage()."</p>
+		    	echo "	<p>Couldn't create PHP file on your server. This could be because file_put_contents is not supported on your server, or you do not have permission to write files to this folder on your server.</p>
 	    			<p>To manually install the PHP file, please create a file named <em>ES3Variables.php</em> in the same directory as your ES3.php file with the following contents:</p>
 					<pre>$phpScript</pre>
 					<p>After creating this file, installation will be complete.</p>";

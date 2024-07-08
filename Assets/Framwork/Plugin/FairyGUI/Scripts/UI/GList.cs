@@ -25,11 +25,6 @@ namespace FairyGUI
     public class GList : GComponent
     {
         /// <summary>
-        /// Resource url of the default item.
-        /// </summary>
-        public string defaultItem;
-
-        /// <summary>
         /// 如果true，当item不可见时自动折叠，否则依然占位
         /// </summary>
         public bool foldInvisibleItems = false;
@@ -55,6 +50,7 @@ namespace FairyGUI
         /// </summary>
         public bool scrollItemToViewOnClick;
 
+        string _defaultItem;
         ListLayoutType _layout;
         int _lineCount;
         int _columnCount;
@@ -81,8 +77,9 @@ namespace FairyGUI
         int _curLineItemCount2; //只用在页面模式，表示垂直方向的项目数
         Vector2 _itemSize;
         int _virtualListChanged; //1-content changed, 2-size changed
-        bool _eventLocked;
         uint itemInfoVer; //用来标志item是否在本次处理中已经被重用了
+
+        int _miscFlags; //1-event locked, 2-focus events registered
 
         class ItemInfo
         {
@@ -139,6 +136,18 @@ namespace FairyGUI
         public EventListener onRightClickItem
         {
             get { return _onRightClickItem ?? (_onRightClickItem = new EventListener(this, "onRightClickItem")); }
+        }
+
+        /// <summary>
+        /// Resource url of the default item.
+        /// </summary>
+        public string defaultItem
+        {
+            get { return _defaultItem; }
+            set
+            {
+                _defaultItem = UIPackage.NormalizeURL(value);
+            }
         }
 
         /// <summary>
@@ -293,6 +302,27 @@ namespace FairyGUI
         /// <summary>
         /// 
         /// </summary>
+        /// <value></value>
+        public Vector2 defaultItemSize
+        {
+            get { return _itemSize; }
+            set
+            {
+                _itemSize = value;
+                if (_virtual)
+                {
+                    if (_layout == ListLayoutType.SingleColumn || _layout == ListLayoutType.FlowHorizontal)
+                        this.scrollPane.scrollStep = _itemSize.y;
+                    else
+                        this.scrollPane.scrollStep = _itemSize.x;
+                    SetVirtualListChangedFlag(true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public GObjectPool itemPool
         {
             get { return _pool; }
@@ -306,7 +336,7 @@ namespace FairyGUI
         public GObject GetFromPool(string url)
         {
             if (string.IsNullOrEmpty(url))
-                url = defaultItem;
+                url = _defaultItem;
 
             GObject ret = _pool.GetObject(url);
             if (ret != null)
@@ -739,48 +769,135 @@ namespace FairyGUI
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="dir"></param>
-        public void HandleArrowKey(int dir)
+        /// <param name="enabled"></param>
+        public void EnableSelectionFocusEvents(bool enabled)
         {
-            int index = this.selectedIndex;
-            if (index == -1)
+            if (((_miscFlags & 2) != 0) == enabled)
                 return;
 
+            if (enabled)
+            {
+                _miscFlags |= 2;
+                this.tabStopChildren = true;
+                onFocusIn.Add(NotifySelection);
+                onFocusOut.Add(NotifySelection);
+            }
+            else
+            {
+                _miscFlags &= 0xFD;
+                onFocusIn.Remove(NotifySelection);
+                onFocusOut.Remove(NotifySelection);
+            }
+        }
+
+        void NotifySelection(EventContext context)
+        {
+            string eventType = context.type == "onFocusIn" ? "onListFocusIn" : "onListFocusOut";
+            int cnt = _children.Count;
+            for (int i = 0; i < cnt; i++)
+            {
+                GButton obj = _children[i].asButton;
+                if (obj != null && obj.selected)
+                    obj.DispatchEvent(eventType);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void EnableArrowKeyNavigation(bool enabled)
+        {
+            if (enabled)
+            {
+                this.tabStopChildren = true;
+                onKeyDown.Add(__keydown);
+            }
+            else
+            {
+                this.tabStopChildren = false;
+                onKeyDown.Remove(__keydown);
+            }
+        }
+
+        void __keydown(EventContext context)
+        {
+            int index = -1;
+            switch (context.inputEvent.keyCode)
+            {
+                case KeyCode.LeftArrow:
+                    index = HandleArrowKey(7);
+                    break;
+
+                case KeyCode.RightArrow:
+                    index = HandleArrowKey(3);
+                    break;
+
+                case KeyCode.UpArrow:
+                    index = HandleArrowKey(1);
+                    break;
+
+                case KeyCode.DownArrow:
+                    index = HandleArrowKey(5);
+                    break;
+            }
+
+            if (index != -1)
+            {
+                index = ItemIndexToChildIndex(index);
+                if (index != -1)
+                    DispatchItemEvent(GetChildAt(index), context);
+
+                context.StopPropagation();
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dir"></param>
+        public int HandleArrowKey(int dir)
+        {
+            int curIndex = this.selectedIndex;
+            if (curIndex == -1)
+                return -1;
+
+            int index = curIndex;
             switch (dir)
             {
                 case 1://up
                     if (_layout == ListLayoutType.SingleColumn || _layout == ListLayoutType.FlowVertical)
                     {
                         index--;
-                        if (index >= 0)
-                        {
-                            ClearSelection();
-                            AddSelection(index, true);
-                        }
                     }
                     else if (_layout == ListLayoutType.FlowHorizontal || _layout == ListLayoutType.Pagination)
                     {
-                        GObject current = _children[index];
-                        int k = 0;
-                        int i;
-                        for (i = index - 1; i >= 0; i--)
+                        if (_virtual)
                         {
-                            GObject obj = _children[i];
-                            if (obj.y != current.y)
-                            {
-                                current = obj;
-                                break;
-                            }
-                            k++;
+                            index -= _curLineItemCount;
                         }
-                        for (; i >= 0; i--)
+                        else
                         {
-                            GObject obj = _children[i];
-                            if (obj.y != current.y)
+                            GObject current = _children[index];
+                            int k = 0;
+                            int i;
+                            for (i = index - 1; i >= 0; i--)
                             {
-                                ClearSelection();
-                                AddSelection(i + k + 1, true);
-                                break;
+                                GObject obj = _children[i];
+                                if (obj.y != current.y)
+                                {
+                                    current = obj;
+                                    break;
+                                }
+                                k++;
+                            }
+                            for (; i >= 0; i--)
+                            {
+                                GObject obj = _children[i];
+                                if (obj.y != current.y)
+                                {
+                                    index = i + k + 1;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -790,36 +907,37 @@ namespace FairyGUI
                     if (_layout == ListLayoutType.SingleRow || _layout == ListLayoutType.FlowHorizontal || _layout == ListLayoutType.Pagination)
                     {
                         index++;
-                        if (index < this.numItems)
-                        {
-                            ClearSelection();
-                            AddSelection(index, true);
-                        }
                     }
                     else if (_layout == ListLayoutType.FlowVertical)
                     {
-                        GObject current = _children[index];
-                        int k = 0;
-                        int cnt = _children.Count;
-                        int i;
-                        for (i = index + 1; i < cnt; i++)
+                        if (_virtual)
                         {
-                            GObject obj = _children[i];
-                            if (obj.x != current.x)
-                            {
-                                current = obj;
-                                break;
-                            }
-                            k++;
+                            index += _curLineItemCount;
                         }
-                        for (; i < cnt; i++)
+                        else
                         {
-                            GObject obj = _children[i];
-                            if (obj.x != current.x)
+                            GObject current = _children[index];
+                            int k = 0;
+                            int cnt = _children.Count;
+                            int i;
+                            for (i = index + 1; i < cnt; i++)
                             {
-                                ClearSelection();
-                                AddSelection(i - k - 1, true);
-                                break;
+                                GObject obj = _children[i];
+                                if (obj.x != current.x)
+                                {
+                                    current = obj;
+                                    break;
+                                }
+                                k++;
+                            }
+                            for (; i < cnt; i++)
+                            {
+                                GObject obj = _children[i];
+                                if (obj.x != current.x)
+                                {
+                                    index = i - k - 1;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -829,36 +947,37 @@ namespace FairyGUI
                     if (_layout == ListLayoutType.SingleColumn || _layout == ListLayoutType.FlowVertical)
                     {
                         index++;
-                        if (index < this.numItems)
-                        {
-                            ClearSelection();
-                            AddSelection(index, true);
-                        }
                     }
                     else if (_layout == ListLayoutType.FlowHorizontal || _layout == ListLayoutType.Pagination)
                     {
-                        GObject current = _children[index];
-                        int k = 0;
-                        int cnt = _children.Count;
-                        int i;
-                        for (i = index + 1; i < cnt; i++)
+                        if (_virtual)
                         {
-                            GObject obj = _children[i];
-                            if (obj.y != current.y)
-                            {
-                                current = obj;
-                                break;
-                            }
-                            k++;
+                            index += _curLineItemCount;
                         }
-                        for (; i < cnt; i++)
+                        else
                         {
-                            GObject obj = _children[i];
-                            if (obj.y != current.y)
+                            GObject current = _children[index];
+                            int k = 0;
+                            int cnt = _children.Count;
+                            int i;
+                            for (i = index + 1; i < cnt; i++)
                             {
-                                ClearSelection();
-                                AddSelection(i - k - 1, true);
-                                break;
+                                GObject obj = _children[i];
+                                if (obj.y != current.y)
+                                {
+                                    current = obj;
+                                    break;
+                                }
+                                k++;
+                            }
+                            for (; i < cnt; i++)
+                            {
+                                GObject obj = _children[i];
+                                if (obj.y != current.y)
+                                {
+                                    index = i - k - 1;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -868,40 +987,50 @@ namespace FairyGUI
                     if (_layout == ListLayoutType.SingleRow || _layout == ListLayoutType.FlowHorizontal || _layout == ListLayoutType.Pagination)
                     {
                         index--;
-                        if (index >= 0)
-                        {
-                            ClearSelection();
-                            AddSelection(index, true);
-                        }
                     }
                     else if (_layout == ListLayoutType.FlowVertical)
                     {
-                        GObject current = _children[index];
-                        int k = 0;
-                        int i;
-                        for (i = index - 1; i >= 0; i--)
+                        if (_virtual)
                         {
-                            GObject obj = _children[i];
-                            if (obj.x != current.x)
-                            {
-                                current = obj;
-                                break;
-                            }
-                            k++;
+                            index -= _curLineItemCount;
                         }
-                        for (; i >= 0; i--)
+                        else
                         {
-                            GObject obj = _children[i];
-                            if (obj.x != current.x)
+                            GObject current = _children[index];
+                            int k = 0;
+                            int i;
+                            for (i = index - 1; i >= 0; i--)
                             {
-                                ClearSelection();
-                                AddSelection(i + k + 1, true);
-                                break;
+                                GObject obj = _children[i];
+                                if (obj.x != current.x)
+                                {
+                                    current = obj;
+                                    break;
+                                }
+                                k++;
+                            }
+                            for (; i >= 0; i--)
+                            {
+                                GObject obj = _children[i];
+                                if (obj.x != current.x)
+                                {
+                                    index = i + k + 1;
+                                    break;
+                                }
                             }
                         }
                     }
                     break;
             }
+
+            if (index != curIndex && index >= 0 && index < this.numItems)
+            {
+                ClearSelection();
+                AddSelection(index, true);
+                return index;
+            }
+            else
+                return -1;
         }
 
         void __clickItem(EventContext context)
@@ -977,7 +1106,7 @@ namespace FairyGUI
                         }
                     }
                 }
-                else if (evt.ctrl || selectionMode == ListSelectionMode.Multiple_SingleClick)
+                else if (evt.ctrlOrCmd || selectionMode == ListSelectionMode.Multiple_SingleClick)
                 {
                     button.selected = !button.selected;
                 }
@@ -988,7 +1117,7 @@ namespace FairyGUI
                         ClearSelectionExcept(button);
                         button.selected = true;
                     }
-                    else
+                    else if (evt.button == 0)
                         ClearSelectionExcept(button);
                 }
             }
@@ -998,6 +1127,16 @@ namespace FairyGUI
 
             if (button.selected)
                 UpdateSelectionController(index);
+        }
+
+        /// <summary>
+        /// Resize to list size to fit specified item count. 
+        /// If list layout is single column or flow horizontally, the height will change to fit. 
+        /// If list layout is single row or flow vertically, the width will change to fit.
+        /// </summary>
+        public void ResizeToFit()
+        {
+            ResizeToFit(int.MaxValue, 0);
         }
 
         /// <summary>
@@ -1176,7 +1315,6 @@ namespace FairyGUI
                         ii.size.x, ii.size.y);
                 }
 
-                setFirst = true;//因为在可变item大小的情况下，只有设置在最顶端，位置才不会因为高度变化而改变，所以只能支持setFirst=true
                 if (this.scrollPane != null)
                     scrollPane.ScrollToView(rect, ani, setFirst);
                 else if (parent != null && parent.scrollPane != null)
@@ -1470,7 +1608,7 @@ namespace FairyGUI
         {
             bool layoutChanged = _virtualListChanged == 2;
             _virtualListChanged = 0;
-            _eventLocked = true;
+            _miscFlags |= 1;
 
             if (layoutChanged)
             {
@@ -1570,7 +1708,7 @@ namespace FairyGUI
             HandleAlign(cw, ch);
             this.scrollPane.SetContentSize(cw, ch);
 
-            _eventLocked = false;
+            _miscFlags &= 0xFE;
 
             HandleScroll(true);
         }
@@ -1738,7 +1876,7 @@ namespace FairyGUI
 
         void HandleScroll(bool forceUpdate)
         {
-            if (_eventLocked)
+            if ((_miscFlags & 1) != 0)
                 return;
 
             if (_layout == ListLayoutType.SingleColumn || _layout == ListLayoutType.FlowHorizontal)
@@ -1804,7 +1942,7 @@ namespace FairyGUI
             bool needRender;
             float deltaSize = 0;
             float firstItemDeltaSize = 0;
-            string url = defaultItem;
+            string url = _defaultItem;
             int partSize = (int)((scrollPane.viewWidth - _columnGap * (_curLineItemCount - 1)) / _curLineItemCount);
 
             itemInfoVer++;
@@ -1818,7 +1956,7 @@ namespace FairyGUI
                     {
                         url = itemProvider(curIndex % _numItems);
                         if (url == null)
-                            url = defaultItem;
+                            url = _defaultItem;
                         url = UIPackage.NormalizeURL(url);
                     }
 
@@ -1974,7 +2112,7 @@ namespace FairyGUI
             bool needRender;
             float deltaSize = 0;
             float firstItemDeltaSize = 0;
-            string url = defaultItem;
+            string url = _defaultItem;
             int partSize = (int)((scrollPane.viewHeight - _lineGap * (_curLineItemCount - 1)) / _curLineItemCount);
 
             itemInfoVer++;
@@ -1988,7 +2126,7 @@ namespace FairyGUI
                     {
                         url = itemProvider(curIndex % _numItems);
                         if (url == null)
-                            url = defaultItem;
+                            url = _defaultItem;
                         url = UIPackage.NormalizeURL(url);
                     }
 
@@ -2144,7 +2282,7 @@ namespace FairyGUI
             int startIndex = page * pageSize;
             int lastIndex = startIndex + pageSize * 2; //测试两页
             bool needRender;
-            string url = defaultItem;
+            string url = _defaultItem;
             int partWidth = (int)((scrollPane.viewWidth - _columnGap * (_curLineItemCount - 1)) / _curLineItemCount);
             int partHeight = (int)((scrollPane.viewHeight - _lineGap * (_curLineItemCount2 - 1)) / _curLineItemCount2);
             itemInfoVer++;
@@ -2208,7 +2346,7 @@ namespace FairyGUI
                         {
                             url = itemProvider(i % _numItems);
                             if (url == null)
-                                url = defaultItem;
+                                url = _defaultItem;
                             url = UIPackage.NormalizeURL(url);
                         }
 
@@ -2348,7 +2486,7 @@ namespace FairyGUI
             }
         }
 
-        override protected internal void GetSnappingPosition(ref float xValue, ref float yValue)
+        override public void GetSnappingPositionWithDir(ref float xValue, ref float yValue, float xDir, float yDir)
         {
             if (_virtual)
             {
@@ -2356,26 +2494,38 @@ namespace FairyGUI
                 {
                     float saved = yValue;
                     int index = GetIndexOnPos1(ref yValue, false);
-                    if (index < _virtualItems.Count && saved - yValue > _virtualItems[index].size.y / 2 && index < _realNumItems)
-                        yValue += _virtualItems[index].size.y + _lineGap;
+                    if (index < _virtualItems.Count && index < _realNumItems)
+                    {
+                        float size = _virtualItems[index].size.y;
+                        if (ShouldSnapToNext(yDir, saved - yValue, size))
+                            yValue += size + _lineGap;
+                    }
                 }
                 else if (_layout == ListLayoutType.SingleRow || _layout == ListLayoutType.FlowVertical)
                 {
                     float saved = xValue;
                     int index = GetIndexOnPos2(ref xValue, false);
-                    if (index < _virtualItems.Count && saved - xValue > _virtualItems[index].size.x / 2 && index < _realNumItems)
-                        xValue += _virtualItems[index].size.x + _columnGap;
+                    if (index < _virtualItems.Count && index < _realNumItems)
+                    {
+                        float size = _virtualItems[index].size.x;
+                        if (ShouldSnapToNext(xDir, saved - xValue, size))
+                            xValue += size + _columnGap;
+                    }
                 }
                 else
                 {
                     float saved = xValue;
                     int index = GetIndexOnPos3(ref xValue, false);
-                    if (index < _virtualItems.Count && saved - xValue > _virtualItems[index].size.x / 2 && index < _realNumItems)
-                        xValue += _virtualItems[index].size.x + _columnGap;
+                    if (index < _virtualItems.Count && index < _realNumItems)
+                    {
+                        float size = _virtualItems[index].size.x;
+                        if (ShouldSnapToNext(xDir, saved - xValue, size))
+                            xValue += size + _columnGap;
+                    }
                 }
             }
             else
-                base.GetSnappingPosition(ref xValue, ref yValue);
+                base.GetSnappingPositionWithDir(ref xValue, ref yValue, xDir, yDir);
         }
 
         private void HandleAlign(float contentWidth, float contentHeight)
@@ -2454,8 +2604,6 @@ namespace FairyGUI
                             continue;
 
                         child.SetSize(viewWidth, child.height, true);
-                        if (child.width > maxWidth)
-                            maxWidth = child.width;
                     }
                 }
                 cw = Mathf.CeilToInt(maxWidth);
@@ -2489,8 +2637,6 @@ namespace FairyGUI
                             continue;
 
                         child.SetSize(child.width, viewHeight, true);
-                        if (child.height > maxHeight)
-                            maxHeight = child.height;
                     }
                 }
                 ch = Mathf.CeilToInt(maxHeight);
@@ -2822,7 +2968,7 @@ namespace FairyGUI
 
             buffer.Seek(beginPos, 8);
 
-            defaultItem = buffer.ReadS();
+            _defaultItem = buffer.ReadS();
             ReadItems(buffer);
         }
 
@@ -2831,13 +2977,13 @@ namespace FairyGUI
             int itemCount = buffer.ReadShort();
             for (int i = 0; i < itemCount; i++)
             {
-                int nextPos = buffer.ReadShort();
+                int nextPos = buffer.ReadUshort();
                 nextPos += buffer.position;
 
                 string str = buffer.ReadS();
                 if (str == null)
                 {
-                    str = defaultItem;
+                    str = _defaultItem;
                     if (string.IsNullOrEmpty(str))
                     {
                         buffer.position = nextPos;

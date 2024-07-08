@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("colorKeys", "alphaKeys", "mode")]
 	public class ES3Type_LayerMask : ES3Type
 	{

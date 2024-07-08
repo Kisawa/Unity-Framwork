@@ -153,29 +153,17 @@ namespace FairyGUI
                 switch (_titleType)
                 {
                     case ProgressTitleType.Percent:
-#if RTL_TEXT_SUPPORT
                         if (RTLSupport.BaseDirection == RTLSupport.DirectionType.RTL)
-                        {
                             _titleObject.text = "%" + Mathf.FloorToInt(percent * 100);
-                        }
                         else
                             _titleObject.text = Mathf.FloorToInt(percent * 100) + "%";
-#else
-                        _titleObject.text = Mathf.FloorToInt(percent * 100) + "%";
-#endif
                         break;
 
                     case ProgressTitleType.ValueAndMax:
-#if RTL_TEXT_SUPPORT
                         if (RTLSupport.BaseDirection == RTLSupport.DirectionType.RTL)
-                        {
                             _titleObject.text = Math.Round(max) + "/" + Math.Round(newValue);
-                        }
                         else
                             _titleObject.text = Math.Round(newValue) + "/" + Math.Round(max);
-#else
-                        _titleObject.text = Math.Round(newValue) + "/" + Math.Round(max);
-#endif
                         break;
 
                     case ProgressTitleType.Value:
@@ -286,6 +274,23 @@ namespace FairyGUI
             _max = buffer.ReadInt();
             if (buffer.version >= 2)
                 _min = buffer.ReadInt();
+
+            if (buffer.version >= 5)
+            {
+                string sound = buffer.ReadS();
+                if (!string.IsNullOrEmpty(sound))
+                {
+                    float volumeScale = buffer.ReadFloat();
+                    displayObject.onClick.Add(() =>
+                    {
+                        NAudioClip audioClip = UIPackage.GetItemAssetByURL(sound) as NAudioClip;
+                        if (audioClip != null && audioClip.nativeClip != null)
+                            Stage.inst.PlayOneShotSound(audioClip.nativeClip, volumeScale);
+                    });
+                }
+                else
+                    buffer.Skip(4);
+            }
 
             Update(_value);
         }

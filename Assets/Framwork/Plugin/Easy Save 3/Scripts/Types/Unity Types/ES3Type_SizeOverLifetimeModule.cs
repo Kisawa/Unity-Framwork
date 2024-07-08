@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("enabled", "size", "sizeMultiplier", "x", "xMultiplier", "y", "yMultiplier", "z", "zMultiplier", "separateAxes")]
 	public class ES3Type_SizeOverLifetimeModule : ES3Type
 	{

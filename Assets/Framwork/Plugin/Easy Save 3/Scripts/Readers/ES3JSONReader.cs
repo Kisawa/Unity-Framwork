@@ -33,10 +33,10 @@ namespace ES3Internal
 				{
 					SkipOpeningBraceOfFile();
 				}
-				catch(Exception e)
+				catch
 				{
 					this.Dispose();
-					throw e;
+					throw new FormatException("Cannot load from file because the data in it is not JSON data, or the data is encrypted.\nIf the save data is encrypted, please ensure that encryption is enabled when you load, and that you are using the same password used to encrypt the data.");
 				}
 			}
 		}
@@ -66,6 +66,8 @@ namespace ES3Internal
 			if(propertyName == null)
 				throw new FormatException("Stream isn't positioned before a property.");
 
+            ES3Debug.Log("<b>"+propertyName+"</b> (reading property)", null, serializationDepth);
+
 			// Skip the ':' seperating property and value.
 			ReadCharIgnoreWhitespace(':');
 
@@ -87,7 +89,7 @@ namespace ES3Internal
 			if(propertyName == ES3Type.typeFieldName)
 			{
 				string typeString = Read_string();
-				dataType = ignoreType ? null : Type.GetType(typeString);
+                dataType = ignoreType ? null : ES3Reflection.GetType(typeString);
 				propertyName  = ReadPropertyName();
 			}
 				
@@ -105,13 +107,15 @@ namespace ES3Internal
 
 		internal override bool StartReadObject()
 		{
+            base.StartReadObject();
 			return ReadNullOrCharIgnoreWhitespace('{');
 		}
 
 		internal override void EndReadObject()
 		{
 			ReadCharIgnoreWhitespace('}');
-		}
+            base.EndReadObject();
+        }
 
 
 		internal override bool StartReadDictionary()
@@ -185,44 +189,6 @@ namespace ES3Internal
 		#endregion
 
 		#region Seeking Methods
-
-		/*
-		 * 	Resets the stream and seeks to the given key.
-		 */
-		internal override bool Goto(string key)
-		{
-			if(settings.encryptionType == ES3.EncryptionType.None)
-				Reset();
-
-			string currentKey;
-			while((currentKey = ReadPropertyName()) != key)
-			{
-				if(currentKey == null)
-					return false;
-				Skip();
-			}
-			return true;
-		}
-
-		/* Resets the stream back to the beginning, resetting any buffers. */
-		protected void Reset()
-		{
-			// If we're already at the beginning of the stream, do nothing.
-			if(baseReader.BaseStream.Position == 0)
-				return;
-
-			baseReader.BaseStream.Position = 0;
-			// Discard the buffer and start from the beginning. See note below.
-			// Note: 	Some people have reported that resetting in this way for encodings
-			//			with a byte order mark causes it to read the byte order mark.
-			//			However, in my tests this does not seem to be the case with .NET 3.5.
-			//			If this does become the case, the solution is to create a new StreamReader,
-			//			but prevent it from disposing of the stream (using a wrapper and overriding Dispose).
-			baseReader.DiscardBufferedData();
-
-			// Read opening brace from file if we're loading straight from file.
-			SkipOpeningBraceOfFile();
-		}
 
 		/* 
 		 * 	Reads a string value into a StreamWriter.
@@ -315,7 +281,7 @@ namespace ES3Internal
 						case '[': 
 							nesting++;
 							break;
-						case '}': // Exited a level of nesting.
+                        case '}': // Exited a level of nesting.
 						case ']':
 							nesting--;
 							// If nesting < 1, we've come to the end of the object.
@@ -351,7 +317,7 @@ namespace ES3Internal
 		/*
 		 * 	Reads a char from the stream and ignores leading and trailing whitespace.
 		 */
-		private char ReadCharIgnoreWhitespace()
+		private char ReadCharIgnoreWhitespace(bool ignoreTrailingWhitespace=true)
 		{
 			char c;
 			// Skip leading whitespace and read char.
@@ -359,8 +325,9 @@ namespace ES3Internal
 			{}
 
 			// Skip trailing whitespace.
-			while(IsWhiteSpace((char)baseReader.Peek()))
-				baseReader.Read();
+            if(ignoreTrailingWhitespace)
+			    while(IsWhiteSpace((char)baseReader.Peek()))
+				    baseReader.Read();
 
 			return c;
 		}
@@ -411,7 +378,7 @@ namespace ES3Internal
 
 		private bool ReadQuotationMarkOrNullIgnoreWhitespace()
 		{
-			char c = ReadCharIgnoreWhitespace();
+			char c = ReadCharIgnoreWhitespace(false); // Don't read trailing whitespace as this is the value.
 
 			if(c == 'n')
 			{
@@ -486,7 +453,7 @@ namespace ES3Internal
 
 		private static bool IsEndOfValue(char c)
 		{
-			return (c == '}' || c == ' ' || c == '\t' || c == ']' || c == ',' || c== ':' || c == endOfStreamChar);
+			return (c == '}' || c == ' ' || c == '\t' || c == ']' || c == ',' || c== ':' || c == endOfStreamChar || c == '\n' || c == '\r');
 		}
 
 		private static bool IsTerminator(char c)
@@ -567,8 +534,17 @@ namespace ES3Internal
 			}
 			return sb.ToString();
 		}
-			
-		internal override char		Read_char()		{ return char.Parse(		Read_string()); 	}
+
+        internal override long Read_ref()
+        {
+            if (ES3ReferenceMgr.Current == null)
+                throw new InvalidOperationException("An Easy Save 3 Manager is required to load references. To add one to your scene, exit playmode and go to Tools > Easy Save 3 > Add Manager to Scene");
+            if (IsQuotationMark(PeekCharIgnoreWhitespace()))
+                return long.Parse(Read_string());
+            return Read_long();
+        }
+
+        internal override char		Read_char()		{ return char.Parse(		Read_string()); 	}
 		internal override float		Read_float()	{ return float.Parse(		GetValueString(), CultureInfo.InvariantCulture); 	}
 		internal override int 		Read_int()		{ return int.Parse(			GetValueString()); 	}
 		internal override bool 		Read_bool()		{ return bool.Parse(		GetValueString()); 	}
@@ -583,7 +559,6 @@ namespace ES3Internal
 		internal override ushort 	Read_ushort()	{ return (ushort)int.Parse(	GetValueString()); 	}
 
 		internal override byte[] 	Read_byteArray(){ return System.Convert.FromBase64String(Read_string()); }
-
 
 		#endregion
 

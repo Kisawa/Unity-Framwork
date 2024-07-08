@@ -1,4 +1,5 @@
 #if FAIRYGUI_TOLUA
+using System;
 using LuaInterface;
 #endif
 
@@ -57,7 +58,11 @@ namespace FairyGUI
 #if FAIRYGUI_TOLUA
         public void Add(LuaFunction func, LuaTable self)
         {
-            EventCallback1 callback = (EventCallback1)DelegateTraits<EventCallback1>.Create(func, self);
+            EventCallback1 callback;
+            if(self != null)
+                callback = (EventCallback1)DelegateTraits<EventCallback1>.Create(func, self);
+            else
+                callback = (EventCallback1)DelegateTraits<EventCallback1>.Create(func);
             _callback1 -= callback;
             _callback1 += callback;
         }
@@ -87,7 +92,7 @@ namespace FairyGUI
                 if (ld != null && ld.Equals(target))
                 {
                     _callback1 = (EventCallback1)Delegate.Remove(_callback1, ds[i]);
-                    //DelayDispose�Ĵ���������ȫ��ԭ�������Remove������Add����ôDelayDispose����ɾ������ע�͵����ȴ�tolua�Ľ�
+                    //DelayDispose will cause problem
                     //state.DelayDispose(ld.func);
                     //if (ld.self != null)
                     //	state.DelayDispose(ld.self);
@@ -113,7 +118,6 @@ namespace FairyGUI
         public void Clear()
         {
 #if FAIRYGUI_TOLUA
-            //DelayDispose�Ĵ���������ȫ��ԭ�������Remove������Add����ôDelayDispose����ɾ������ע�͵����ȴ�tolua�Ľ�
             //if (_callback1 != null)
             //{
             //	Delegate[] ds = _callback1.GetInvocationList();

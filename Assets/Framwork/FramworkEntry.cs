@@ -13,7 +13,7 @@ namespace Framwork
 
         public FguiConfiguration FguiConfiguration;
         [SerializeField] bool useFgui;
-        [SerializeField] string enterUITypeFullName;
+        [SerializeField] TypeData enterUITypeData;
         [SerializeField] int selectSingleFguiMask;
         [SerializeField] int selectNoSingleFguiMask;
         [SerializeField] UnityEvent fguiConfigLoadCallback;
@@ -51,6 +51,7 @@ namespace Framwork
         {
             Self = this;
             sequenceLoad();
+            DontDestroyOnLoad(this);
         }
 
         void sequenceLoad(int index = 0)
@@ -116,39 +117,13 @@ namespace Framwork
             if (useFgui && FguiConfiguration != null && Array.IndexOf(runTimeSequence, DataType.Fgui) == -1)
             {
                 count++;
-                int fguiCount = 2;
-                Action fguiAction = () =>
-                {
-                    if (--fguiCount <= 0)
-                    {
-                        fguiConfigLoadCallback?.Invoke();
-                        callback.Invoke();
-                    }
-                };
-                FguiUtility.LoadFguiConfig(() =>
-                {
-                    if (!string.IsNullOrEmpty(enterUITypeFullName))
-                    {
-                        Type mainUIType = Type.GetType(enterUITypeFullName);
-                        MethodInfo showFguiMethodInfo = typeof(FguiUtility).GetMethod("ShowFgui", BindingFlags.Static | BindingFlags.Public);
-                        Action<SingleFgui> action = fgui => { enterUIShowCallback?.Invoke(fgui); fguiAction.Invoke(); };
-                        showFguiMethodInfo.MakeGenericMethod(new Type[] { mainUIType }).Invoke(null, new object[] { null, action });
-                    }
-                    else
-                        fguiAction.Invoke();
-                });
-                if (selectSingleFguiMask != 0 || selectNoSingleFguiMask != 0)
-                {
-                    fguiCount++;
-                    FguiUtility.InjectAllPackage(FguiType.All, fguiAction, selectSingleFguiMask, selectNoSingleFguiMask);
-                }
-                fguiAction.Invoke();
+                fguiConfigLoad(callback);
                 yield return 0;
             }
             if (injectLocalData && !localDataIsNull && Array.IndexOf(runTimeSequence, DataType.LocalData) == -1)
             {
-                LocalSaveUtility.InjectAll(localData => injectSingleLocalDataCallback?.Invoke(localData), ignoreLocalDataTypeNames);
                 count++;
+                LocalSaveUtility.InjectAll(localData => injectSingleLocalDataCallback?.Invoke(localData), ignoreLocalDataTypeNames);
                 injectAllLocalDataCallback?.Invoke();
                 callback.Invoke();
             }
@@ -193,44 +168,41 @@ namespace Framwork
 
         void fguiConfigLoad(Action callback)
         {
-            if (useFgui && FguiConfiguration != null)
+            FguiUtility.LoadFguiConfig();
+            if (selectSingleFguiMask != 0 || selectNoSingleFguiMask != 0)
+                FguiUtility.InjectAllPackage(FguiType.All, selectSingleFguiMask, selectNoSingleFguiMask);
+            fguiConfigLoadCallback?.Invoke();
+            if (!string.IsNullOrEmpty(enterUITypeData.AssemblyName) && !string.IsNullOrEmpty(enterUITypeData.TypeName))
             {
-                int fguiCount = 2;
-                Action fguiAction = () =>
-                {
-                    if (--fguiCount <= 0)
-                    {
-                        fguiConfigLoadCallback?.Invoke();
-                        callback?.Invoke();
-                    }
-                };
-                FguiUtility.LoadFguiConfig(() =>
-                {
-                    if (!string.IsNullOrEmpty(enterUITypeFullName))
-                    {
-                        Type mainUIType = Type.GetType(enterUITypeFullName);
-                        MethodInfo showFguiMethodInfo = typeof(FguiUtility).GetMethod("ShowFgui", BindingFlags.Static | BindingFlags.Public);
-                        Action<SingleFgui> action = fgui => { enterUIShowCallback?.Invoke(fgui); fguiAction.Invoke(); };
-                        showFguiMethodInfo.MakeGenericMethod(new Type[] { mainUIType }).Invoke(null, new object[] { null, action });
-                    }
-                    else
-                        fguiAction.Invoke();
-                });
-                if (selectSingleFguiMask != 0 || selectNoSingleFguiMask != 0)
-                {
-                    fguiCount++;
-                    FguiUtility.InjectAllPackage(FguiType.All, fguiAction, selectSingleFguiMask, selectNoSingleFguiMask);
-                }
-                fguiAction.Invoke();
+                Assembly assembly = Assembly.Load(enterUITypeData.AssemblyName);
+                Type mainUIType = assembly.GetType(enterUITypeData.TypeName);
+                MethodInfo showFguiMethodInfo = typeof(FguiUtility).GetMethod("ShowFgui", BindingFlags.Static | BindingFlags.Public);
+                SingleFgui fgui = (SingleFgui)showFguiMethodInfo.MakeGenericMethod(new Type[] { mainUIType }).Invoke(null, new object[] { null });
+                enterUIShowCallback?.Invoke(fgui);
             }
-            else
-                callback?.Invoke();
+            callback.Invoke();
+        }
+
+        public void AwaitAaction(Action action)
+        {
+            StartCoroutine(awaitAction(action));
+        }
+
+        IEnumerator awaitAction(Action action)
+        {
+            yield return 0;
+            action?.Invoke();
         }
 
         void OnApplicationFocus(bool focus)
         {
             if (!focus)
                 LocalSaveUtility.SaveAll();
+        }
+
+        private void OnApplicationQuit()
+        {
+            LocalSaveUtility.SaveAll();
         }
     }
 
@@ -257,5 +229,12 @@ namespace Framwork
         JsonData,
         LocalData,
         Asset
+    }
+
+    [System.Serializable]
+    public struct TypeData
+    {
+        public string AssemblyName;
+        public string TypeName;
     }
 }

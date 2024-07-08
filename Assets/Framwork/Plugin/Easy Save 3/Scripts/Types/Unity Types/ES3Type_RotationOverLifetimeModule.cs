@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("enabled", "x", "xMultiplier", "y", "yMultiplier", "z", "zMultiplier", "separateAxes")]
 	public class ES3Type_RotationOverLifetimeModule : ES3Type
 	{

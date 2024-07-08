@@ -102,13 +102,12 @@ namespace FairyGUI
             helperIntList.Clear();
             List<int> sels = GetSelection(helperIntList);
             int cnt = sels.Count;
-            List<GTreeNode> ret = new List<GTreeNode>();
             for (int i = 0; i < cnt; i++)
             {
                 GTreeNode node = GetChildAt(sels[i])._treeNode;
                 result.Add(node);
             }
-            return ret;
+            return result;
         }
         /// <summary>
 		/// 
@@ -512,7 +511,7 @@ namespace FairyGUI
             int cnt = buffer.ReadShort();
             for (int i = 0; i < cnt; i++)
             {
-                nextPos = buffer.ReadShort();
+                nextPos = buffer.ReadUshort();
                 nextPos += buffer.position;
 
                 str = buffer.ReadS();

@@ -26,6 +26,14 @@ namespace FairyGUI.Utils
         static List<string> sHelperList1 = new List<string>();
         static List<string> sHelperList2 = new List<string>();
 
+#if UNITY_2019_3_OR_NEWER
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void InitializeOnLoad()
+        {
+            inst = new HtmlParser();
+        }
+#endif
+
         public HtmlParser()
         {
             _textFormatStack = new List<TextFormat2>();
@@ -94,12 +102,21 @@ namespace FairyGUI.Utils
                             PopTextFormat();
                         break;
 
+                    case "strike":
+                        if (XMLIterator.tagType == XMLTagType.Start)
+                        {
+                            PushTextFormat();
+                            _format.strikethrough = true;
+                        }
+                        else
+                            PopTextFormat();
+                        break;
+
                     case "sub":
                         {
                             if (XMLIterator.tagType == XMLTagType.Start)
                             {
                                 PushTextFormat();
-                                _format.size = Mathf.CeilToInt(_format.size * 0.58f);
                                 _format.specialStyle = TextFormat.SpecialStyle.Subscript;
                             }
                             else
@@ -112,7 +129,6 @@ namespace FairyGUI.Utils
                             if (XMLIterator.tagType == XMLTagType.Start)
                             {
                                 PushTextFormat();
-                                _format.size = Mathf.CeilToInt(_format.size * 0.58f);
                                 _format.specialStyle = TextFormat.SpecialStyle.Superscript;
                             }
                             else
@@ -182,7 +198,7 @@ namespace FairyGUI.Utils
                         {
                             PushTextFormat();
 
-                            _format.underline = _format.underline | parseOptions.linkUnderline;
+                            _format.underline = _format.underline || parseOptions.linkUnderline;
                             if (!_format.colorChanged && parseOptions.linkColor.a != 0)
                                 _format.color = parseOptions.linkColor;
 

@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	public class ES3Type_uint : ES3Type
 	{
 		public static ES3Type Instance = null;

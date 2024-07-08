@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("mode", "gradientMax", "gradientMin", "colorMax", "colorMin", "color", "gradient")]
 	public class ES3Type_MinMaxGradient : ES3Type
 	{

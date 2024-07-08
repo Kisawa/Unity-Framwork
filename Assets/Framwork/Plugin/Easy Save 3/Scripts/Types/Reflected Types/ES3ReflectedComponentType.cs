@@ -1,10 +1,8 @@
 ﻿using System;
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	internal class ES3ReflectedComponentType : ES3ComponentType
 	{
 		public ES3ReflectedComponentType(Type type) : base(type)

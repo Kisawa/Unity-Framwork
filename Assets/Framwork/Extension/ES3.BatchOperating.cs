@@ -5,72 +5,116 @@ using UnityEngine;
 
 namespace Framwork
 {
+    public class ES3Saver
+    {
+        public ES3Settings setting;
+
+        ES3Writer writer;
+        ES3File file;
+
+        public ES3Saver()
+        {
+            setting = new ES3Settings();
+            Init();
+        }
+
+        public ES3Saver(ES3Settings setting)
+        {
+            this.setting = setting;
+            Init();
+        }
+
+        void Init()
+        {
+            if (setting.location == global::ES3.Location.Cache)
+                file = ES3File.GetOrCreateCachedFile(setting);
+            else
+                writer = ES3Writer.Create(setting);
+        }
+
+        public void Save<T>(string key, T value)
+        {
+            if (file != null)
+                file.Save(key, value);
+            else if (writer != null)
+                writer.Write<T>(key, value);
+        }
+
+        public void EndSave()
+        {
+            if (writer != null)
+            {
+                writer.Save();
+                writer.Dispose();
+            }
+        }
+    }
+
+    public class ES3Loader
+    {
+        public ES3Settings setting;
+
+        ES3File file;
+
+        public ES3Loader()
+        {
+            setting = new ES3Settings();
+            Init();
+        }
+
+        public ES3Loader(ES3Settings setting)
+        {
+            this.setting = setting;
+            Init();
+        }
+
+        void Init()
+        {
+            if (setting.location == global::ES3.Location.Cache)
+                file = ES3File.GetOrCreateCachedFile(setting);
+        }
+
+        public bool TryToLoad<T>(string key, out T output)
+        {
+            bool res;
+            output = default;
+            if (file != null)
+            {
+                res = file.KeyExists(key);
+                if (res)
+                    output = file.Load<T>(key);
+            }
+            else
+            {
+                using (ES3Reader reader = ES3Reader.Create(setting))
+                    res = reader == null ? false : reader.Goto(key);
+                if (res)
+                {
+                    using (ES3Reader reader = ES3Reader.Create(setting))
+                        output = reader.Read<T>(key);
+                }
+            }
+            return res;
+        }
+
+        public void EndLoad() { }
+    }
+
     public static partial class ES3
     {
-        public static List<Type> UnsafeTypeList = new List<Type>();
-
-        public static ES3Writer StartSave(ES3Settings setting = null)
+        public static ES3Saver StartSave(ES3Settings setting = null)
         {
             if (setting == null)
                 setting = new ES3Settings();
-            return ES3Writer.Create(setting);
+            return new ES3Saver(setting);
         }
 
-        public static void ToSave<T>(this ES3Writer writer, string key, object value)
-        {
-            writer.settings.safeReflection = false;
-            writer.Write<T>(key, value);
-        }
-
-        public static void EndSave(this ES3Writer writer)
-        {
-            writer.Save();
-            writer.Dispose();
-        }
-
-        public static ES3Reader StartLoad(ES3Settings setting = null)
+        public static ES3Loader StartLoad(ES3Settings setting = null)
         {
             if (setting == null)
                 setting = new ES3Settings();
-            ES3Reader reader = ES3Reader.Create(setting);
-            return reader;
-        }
-
-        public static bool TryToLoad<T>(this ES3Reader reader, string key, out T output)
-        {
-            if (reader == null)
-            {
-                output = default;
-                return false;
-            }
-            if (reader.ContainsKey(key))
-            {
-                try
-                {
-                    output = reader.Read<T>(key);
-                }
-                catch (Exception)
-                {
-                    output = default;
-                    return false;
-                }
-                return true;
-            }
-            output = default;
-            return false;
-        }
-
-        public static void EndLoad(this ES3Reader reader)
-        {
-            if (reader != null)
-                reader.Dispose();
-        }
-
-        public static bool ContainsKey(this ES3Reader reader, string key)
-        {
-            if (reader == null)
-                return false;
-            return reader.Goto(key);
+            ES3Loader loader = new ES3Loader(setting);
+            return loader;
         }
     }
 }

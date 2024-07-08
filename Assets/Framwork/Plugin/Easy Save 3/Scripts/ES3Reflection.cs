@@ -9,547 +9,788 @@ using ES3Types;
 
 namespace ES3Internal
 {
-	public static class ES3Reflection
-	{
-		public const string memberFieldPrefix = "m_";
-		public const string componentTagFieldName = "tag";
-		public const string componentNameFieldName = "name";
+    public static class ES3Reflection
+    {
+        public const string memberFieldPrefix = "m_";
+        public const string componentTagFieldName = "tag";
+        public const string componentNameFieldName = "name";
+        public static readonly string[] excludedPropertyNames = new string[] { "runInEditMode", "useGUILayout", "hideFlags" };
 
-		public static readonly Type serializableAttributeType = typeof(System.SerializableAttribute);
-		public static readonly Type serializeFieldAttributeType = typeof(SerializeField);
-		public static readonly Type obsoleteAttributeType = typeof(System.ObsoleteAttribute);
-		public static readonly Type nonSerializedAttributeType = typeof(System.NonSerializedAttribute);
+        public static readonly Type serializableAttributeType = typeof(System.SerializableAttribute);
+        public static readonly Type serializeFieldAttributeType = typeof(SerializeField);
+        public static readonly Type obsoleteAttributeType = typeof(System.ObsoleteAttribute);
+        public static readonly Type nonSerializedAttributeType = typeof(System.NonSerializedAttribute);
+        public static readonly Type es3SerializableAttributeType = typeof(ES3Serializable);
+        public static readonly Type es3NonSerializableAttributeType = typeof(ES3NonSerializable);
 
-		public static Type[] EmptyTypes = new Type[0];
+        public static Type[] EmptyTypes = new Type[0];
 
-		private static Assembly[] _assemblies = null;
-		private static Assembly[] Assemblies
-		{
-			get
-			{
-				if(_assemblies == null) 
-				{
-					var assemblyNames = new ES3Settings().assemblyNames;
-					var assemblyList = new List<Assembly>();
+        private static Assembly[] _assemblies = null;
+        private static Assembly[] Assemblies
+        {
+            get
+            {
 
-					for(int i=0; i<assemblyNames.Length; i++)
-					{
-						try
-						{
-							var assembly = Assembly.Load(new AssemblyName(assemblyNames[i]));
-							if(assembly != null)
-								assemblyList.Add(assembly);
-						}
-						catch
-						{
-							Debug.LogWarning("Assembly \""+assemblyNames[i]+"\" could not be found. If you are using Assembly Definition Files, you should delete this assembly from the \"Assemblies containing ES3Types\" list in Window > Easy Save 3 > Settings, and add the names of the Assemblies you are using instead.");
-						}
-					}
-					_assemblies = assemblyList.ToArray();
-				}
-				return _assemblies;
-			}
-		}
+                if (_assemblies == null)
+                {
+                    var assemblyNames = new ES3Settings().assemblyNames;
+                    var assemblyList = new List<Assembly>();
 
-		/*	
+                    /* We only use a try/catch block for UWP because exceptions can be disabled on some other platforms (e.g. WebGL), but the non-try/catch method doesn't work on UWP */
+#if NETFX_CORE
+                    for (int i = 0; i < assemblyNames.Length; i++)
+                    {
+                        try
+                        {
+                            var assembly = Assembly.Load(new AssemblyName(assemblyNames[i]));
+                            if (assembly != null)
+                                assemblyList.Add(assembly);
+                        }
+                        catch { }
+                    }
+
+#else
+                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                    foreach (var assembly in assemblies)
+                    {
+                        // This try/catch block is here to catch errors such as assemblies containing double-byte characters in their path.
+                        // This obviously won't work if exceptions are disabled.
+                        try
+                        {
+                            if (assemblyNames.Contains(assembly.GetName().Name))
+                            {
+                                assemblyList.Add(assembly);
+                            }
+                        }
+                        catch { }
+                    }
+#endif
+                    _assemblies = assemblyList.ToArray();
+                }
+                return _assemblies;
+            }
+        }
+
+        /*	
 		 * 	Gets the element type of a collection or array.
 		 * 	Returns null if type is not a collection type.
 		 */
-		public static Type[] GetElementTypes(Type type)
-		{
-			if(IsGenericType(type))
-				return ES3Reflection.GetGenericArguments(type);
-			else if(type.IsArray)
-				return new Type[]{ES3Reflection.GetElementType(type)};
-			else
-				return null;
-		}
-			
-		public static List<FieldInfo> GetSerializableFields(Type type, bool safe=true, string[] memberNames=null)
-		{
-			var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-			var serializableFields = new List<FieldInfo>();
+        public static Type[] GetElementTypes(Type type)
+        {
+            if (IsGenericType(type))
+                return ES3Reflection.GetGenericArguments(type);
+            else if (type.IsArray)
+                return new Type[] { ES3Reflection.GetElementType(type) };
+            else
+                return null;
+        }
 
-			foreach(var field in fields)
-			{
-				var fieldName = field.Name;
+        public static List<FieldInfo> GetSerializableFields(Type type, List<FieldInfo> serializableFields = null, bool safe = true, string[] memberNames = null, BindingFlags bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+        {
+            if (type == null)
+                return new List<FieldInfo>();
 
-				// If a members array was provided as a parameter, only include the field if it's in the array.
-				if(memberNames != null)
-					if(!memberNames.Contains(fieldName))
-						continue;
+            var fields = type.GetFields(bindings);
 
-				var fieldType = field.FieldType;
+            if (serializableFields == null)
+                serializableFields = new List<FieldInfo>();
 
-				if(safe)
-				{
-					// If the field is private, only serialize it if it's explicitly marked as serializable.
-					if(!field.IsPublic && !AttributeIsDefined(field, serializeFieldAttributeType))
-						continue;
-				}
+            foreach (var field in fields)
+            {
+                var fieldName = field.Name;
 
-				// Don't store fields whose type is the same as the class the field is housed in unless it's stored by reference (to prevent cyclic references)
-				if(fieldType == type && !IsAssignableFrom(typeof(UnityEngine.Object), fieldType))
-					continue;
+                // If a members array was provided as a parameter, only include the field if it's in the array.
+                if (memberNames != null)
+                    if (!memberNames.Contains(fieldName))
+                        continue;
 
-				// If property is marked as obsolete or non-serialized, don't serialize it.
-				if(AttributeIsDefined(field, obsoleteAttributeType) || AttributeIsDefined(field, nonSerializedAttributeType))
-					continue;
+                var fieldType = field.FieldType;
 
-				if(!TypeIsSerializable(field.FieldType))
-					continue;
+                if (AttributeIsDefined(field, es3SerializableAttributeType))
+                {
+                    serializableFields.Add(field);
+                    continue;
+                }
 
-				// Don't serialize member fields.
-				if(safe && fieldName.StartsWith(memberFieldPrefix))
-					continue;
+                if (AttributeIsDefined(field, es3NonSerializableAttributeType))
+                    continue;
 
-				serializableFields.Add(field);
-			}
-			return serializableFields;
-		}
+                if (safe)
+                {
+                    // If the field is private, only serialize it if it's explicitly marked as serializable.
+                    if (!field.IsPublic && !AttributeIsDefined(field, serializeFieldAttributeType))
+                        continue;
+                }
+                else if (fieldName.StartsWith('<'))
+                    continue;
 
-		public static List<PropertyInfo> GetSerializableProperties(Type type, bool safe=true, string[] memberNames=null)
-		{
-			bool isComponent = IsAssignableFrom(typeof(UnityEngine.Component), type);
+                // Exclude const or readonly fields.
+                if (field.IsLiteral || field.IsInitOnly)
+                    continue;
 
-			var bindingFlags = BindingFlags.Public | BindingFlags.Instance;
-			// Only get private properties if we're not getting properties safely.
-			if(!safe)
-				bindingFlags = bindingFlags | BindingFlags.NonPublic;
-			
-			var properties = type.GetProperties(bindingFlags);
-			var serializableProperties = new List<PropertyInfo>();
+                // Don't store fields whose type is the same as the class the field is housed in unless it's stored by reference (to prevent cyclic references)
+                if (fieldType == type && !IsAssignableFrom(typeof(UnityEngine.Object), fieldType))
+                    continue;
 
-			foreach(var p in properties)
-			{
-				var propertyName = p.Name;
+                // If property is marked as obsolete or non-serialized, don't serialize it.
+                if (AttributeIsDefined(field, nonSerializedAttributeType) || AttributeIsDefined(field, obsoleteAttributeType))
+                    continue;
 
-				// If a members array was provided as a parameter, only include the property if it's in the array.
-				if(memberNames != null)
-					if(!memberNames.Contains(propertyName))
-						continue;
+                if (!TypeIsSerializable(field.FieldType))
+                    continue;
 
-				if(safe)
-				{
-					// If safe serialization is enabled, only get properties which are explicitly marked as serializable.
-					if(!AttributeIsDefined(p, serializeFieldAttributeType))
-						continue;
-				}
+                // Don't serialize member fields.
+                if (safe && fieldName.StartsWith(memberFieldPrefix) && field.DeclaringType.Namespace != null && field.DeclaringType.Namespace.Contains("UnityEngine"))
+                    continue;
 
-				var propertyType = p.PropertyType;
+                serializableFields.Add(field);
+            }
 
-				// Don't store properties whose type is the same as the class the property is housed in unless it's stored by reference (to prevent cyclic references)
-				if(propertyType == type && !IsAssignableFrom(typeof(UnityEngine.Object), propertyType))
-					continue;
+            var baseType = BaseType(type);
+            if (baseType != null && baseType != typeof(System.Object) && baseType != typeof(UnityEngine.Object))
+                GetSerializableFields(BaseType(type), serializableFields, safe, memberNames);
 
-				if(!p.CanRead || !p.CanWrite)
-					continue;
+            return serializableFields;
+        }
 
-				// Only support properties with indexing if they're an array.
-				if(p.GetIndexParameters().Length != 0 && !propertyType.IsArray)
-					continue;
+        public static List<PropertyInfo> GetSerializableProperties(Type type, List<PropertyInfo> serializableProperties = null, bool safe = true, string[] memberNames = null, BindingFlags bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+        {
+            bool isComponent = IsAssignableFrom(typeof(UnityEngine.Component), type);
 
-				// Check that the type of the property is one which we can serialize.
-				// Also check whether an ES3Type exists for it.
-				if(!TypeIsSerializable(propertyType))
-					continue;
+            // Only get private properties if we're not getting properties safely.
+            if (!safe)
+                bindings = bindings | BindingFlags.NonPublic;
 
-				// Ignore certain properties on components.
-				if(isComponent)
-				{
-					// Ignore properties which are accessors for GameObject fields.
-					if(propertyName == componentTagFieldName || propertyName == componentNameFieldName)
-						continue;
-				}
+            var properties = type.GetProperties(bindings);
 
-				// If property is marked as obsolete or non-serialized, don't serialize it.
-				if(AttributeIsDefined(p, obsoleteAttributeType) || AttributeIsDefined(p, nonSerializedAttributeType))
-					continue;
+            if (serializableProperties == null)
+                serializableProperties = new List<PropertyInfo>();
 
-				// Don't serialize member propertes as these are usually unsafe in Unity classes.
-				if(safe && propertyName.StartsWith(memberFieldPrefix))
-					continue;
+            foreach (var p in properties)
+            {
+                if (AttributeIsDefined(p, es3SerializableAttributeType))
+                {
+                    serializableProperties.Add(p);
+                    continue;
+                }
 
-				serializableProperties.Add(p);
-			}
+                if (AttributeIsDefined(p, es3NonSerializableAttributeType))
+                    continue;
 
-			return serializableProperties;
-		}
+                var propertyName = p.Name;
 
-		public static bool TypeIsSerializable(Type type)
-		{
-			if(type == null)
-				return false;
+                if (excludedPropertyNames.Contains(propertyName))
+                    continue;
 
-			if(IsPrimitive(type) || IsValueType(type) || IsAssignableFrom(typeof(UnityEngine.Component), type) || IsAssignableFrom(typeof(UnityEngine.ScriptableObject), type))
-				return true;
+                // If a members array was provided as a parameter, only include the property if it's in the array.
+                if (memberNames != null)
+                    if (!memberNames.Contains(propertyName))
+                        continue;
 
-			var es3Type = ES3TypeMgr.GetOrCreateES3Type(type, false);
-				
-			if(es3Type != null && !es3Type.isUnsupported)
-				return true;
+                if (safe)
+                {
+                    // If safe serialization is enabled, only get properties which are explicitly marked as serializable.
+                    if (!AttributeIsDefined(p, serializeFieldAttributeType) && !AttributeIsDefined(p, es3SerializableAttributeType))
+                        continue;
+                }
 
-			if(TypeIsArray(type))
-			{
-				if(TypeIsSerializable(type.GetElementType()))
-					return true;
-				return false;
-			}
+                var propertyType = p.PropertyType;
 
-			var genericArgs = type.GetGenericArguments();
-			for(int i=0; i<genericArgs.Length; i++)
-				if(!TypeIsSerializable(genericArgs[i]))
-					return false;
+                // Don't store properties whose type is the same as the class the property is housed in unless it's stored by reference (to prevent cyclic references)
+                if (propertyType == type && !IsAssignableFrom(typeof(UnityEngine.Object), propertyType))
+                    continue;
 
-			if(HasParameterlessConstructor(type))
-				return true;
-			return false;
-		}
+                if (!p.CanRead || !p.CanWrite)
+                    continue;
 
-		public static System.Object CreateInstance(Type type)
-		{
-			if(IsAssignableFrom(typeof(UnityEngine.Component), type))
-				return ES3ComponentType.CreateComponent(type);
-			else if(IsAssignableFrom(typeof(ScriptableObject), type))
-				return ScriptableObject.CreateInstance(type);
-			return Activator.CreateInstance(type);
-		}
+                // Only support properties with indexing if they're an array.
+                if (p.GetIndexParameters().Length != 0 && !propertyType.IsArray)
+                    continue;
 
-		public static System.Object CreateInstance(Type type, params object[] args)
-		{
-			if(IsAssignableFrom(typeof(UnityEngine.Component), type))
-				return ES3ComponentType.CreateComponent(type);
-			else if(IsAssignableFrom(typeof(ScriptableObject), type))
-				return ScriptableObject.CreateInstance(type);
-			return Activator.CreateInstance(type, args);
-		}
+                // Check that the type of the property is one which we can serialize.
+                // Also check whether an ES3Type exists for it.
+                if (!TypeIsSerializable(propertyType))
+                    continue;
 
-		public static Array ArrayCreateInstance(Type type, int length)
-		{
-			return Array.CreateInstance(type, new int[]{length});
-		}
+                // Ignore certain properties on components.
+                if (isComponent)
+                {
+                    // Ignore properties which are accessors for GameObject fields.
+                    if (propertyName == componentTagFieldName || propertyName == componentNameFieldName)
+                        continue;
+                }
 
-		public static Array ArrayCreateInstance(Type type, int[] dimensions)
-		{
-			return Array.CreateInstance(type, dimensions);
-		}
+                // If property is marked as obsolete or non-serialized, don't serialize it.
+                if (AttributeIsDefined(p, obsoleteAttributeType) || AttributeIsDefined(p, nonSerializedAttributeType))
+                    continue;
 
-		public static Type MakeGenericType(Type type, Type genericParam)
-		{
-			return type.MakeGenericType(genericParam);
-		}
+                serializableProperties.Add(p);
+            }
 
-		public static ES3ReflectedMember[] GetSerializableMembers(Type type, bool safe=true, string[] memberNames=null)
-		{
-			var fieldInfos = GetSerializableFields(type, safe, memberNames);
-			var propertyInfos = GetSerializableProperties(type, safe, memberNames);
-			var reflectedFields = new ES3ReflectedMember[fieldInfos.Count + propertyInfos.Count];
+            var baseType = BaseType(type);
+            if (baseType != null && baseType != typeof(System.Object))
+                GetSerializableProperties(baseType, serializableProperties, safe, memberNames);
 
-			for(int i=0; i<fieldInfos.Count; i++)
-				reflectedFields[i] = new ES3ReflectedMember(fieldInfos[i]);
-			for(int i=0; i<propertyInfos.Count; i++)
-				reflectedFields[i+fieldInfos.Count] = new ES3ReflectedMember(propertyInfos[i]);
+            return serializableProperties;
+        }
 
-			return reflectedFields;
-		}
+        public static bool TypeIsSerializable(Type type)
+        {
+            if (type == null)
+                return false;
 
-		public static ES3ReflectedMember GetES3ReflectedProperty(Type type, string propertyName)
-		{
-			var propertyInfo = ES3Reflection.GetProperty(type, propertyName);
-			return new ES3ReflectedMember(propertyInfo);
-		}
+            if (AttributeIsDefined(type, es3NonSerializableAttributeType))
+                return false;
 
-		public static ES3ReflectedMember GetES3ReflectedMember(Type type, string fieldName)
-		{
-			var fieldInfo = ES3Reflection.GetField(type, fieldName);
-			return new ES3ReflectedMember(fieldInfo);
-		}
+            if (IsPrimitive(type) || IsValueType(type) || IsAssignableFrom(typeof(UnityEngine.Component), type) || IsAssignableFrom(typeof(UnityEngine.ScriptableObject), type))
+                return true;
 
-		/*
+            var es3Type = ES3TypeMgr.GetOrCreateES3Type(type, false);
+
+            if (es3Type != null && !es3Type.isUnsupported)
+                return true;
+
+            if (TypeIsArray(type))
+            {
+                if (TypeIsSerializable(type.GetElementType()))
+                    return true;
+                return false;
+            }
+
+            var genericArgs = type.GetGenericArguments();
+            for (int i = 0; i < genericArgs.Length; i++)
+                if (!TypeIsSerializable(genericArgs[i]))
+                    return false;
+
+            /*if (HasParameterlessConstructor(type))
+                return true;*/
+            return false;
+        }
+
+        public static System.Object CreateInstance(Type type)
+        {
+            if (IsAssignableFrom(typeof(UnityEngine.Component), type))
+                return ES3ComponentType.CreateComponent(type);
+            else if (IsAssignableFrom(typeof(ScriptableObject), type))
+                return ScriptableObject.CreateInstance(type);
+            else if (ES3Reflection.HasParameterlessConstructor(type))
+                return Activator.CreateInstance(type);
+            else
+            {
+#if NETFX_CORE
+                throw new NotSupportedException($"Cannot create an instance of {type} because it does not have a parameterless constructor, which is required on Universal Windows platform.");
+#else
+                return System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
+#endif
+            }
+        }
+
+        public static System.Object CreateInstance(Type type, params object[] args)
+        {
+            if (IsAssignableFrom(typeof(UnityEngine.Component), type))
+                return ES3ComponentType.CreateComponent(type);
+            else if (IsAssignableFrom(typeof(ScriptableObject), type))
+                return ScriptableObject.CreateInstance(type);
+            return Activator.CreateInstance(type, args);
+        }
+
+        public static Array ArrayCreateInstance(Type type, int length)
+        {
+            return Array.CreateInstance(type, new int[] { length });
+        }
+
+        public static Array ArrayCreateInstance(Type type, int[] dimensions)
+        {
+            return Array.CreateInstance(type, dimensions);
+        }
+
+        public static Type MakeGenericType(Type type, Type genericParam)
+        {
+            return type.MakeGenericType(genericParam);
+        }
+
+        public static ES3ReflectedMember[] GetSerializableMembers(Type type, bool safe = true, string[] memberNames = null)
+        {
+            if (type == null)
+                return new ES3ReflectedMember[0]; 
+
+            var fieldInfos = GetSerializableFields(type, new List<FieldInfo>(), safe, memberNames);
+            var propertyInfos = GetSerializableProperties(type, new List<PropertyInfo>(), safe, memberNames);
+            var reflectedFields = new ES3ReflectedMember[fieldInfos.Count + propertyInfos.Count];
+
+            for (int i = 0; i < fieldInfos.Count; i++)
+                reflectedFields[i] = new ES3ReflectedMember(fieldInfos[i]);
+            for (int i = 0; i < propertyInfos.Count; i++)
+                reflectedFields[i + fieldInfos.Count] = new ES3ReflectedMember(propertyInfos[i]);
+
+            return reflectedFields;
+        }
+
+        public static ES3ReflectedMember GetES3ReflectedProperty(Type type, string propertyName)
+        {
+            var propertyInfo = ES3Reflection.GetProperty(type, propertyName);
+            return new ES3ReflectedMember(propertyInfo);
+        }
+
+        public static ES3ReflectedMember GetES3ReflectedMember(Type type, string fieldName)
+        {
+            var fieldInfo = ES3Reflection.GetField(type, fieldName);
+            return new ES3ReflectedMember(fieldInfo);
+        }
+
+        /*
 		 * 	Finds all classes of a specific type, and then returns an instance of each.
-		 * 	Ignores classes which can't be instantiated (i.e. abstract classes).
+		 * 	Ignores classes which can't be instantiated (i.e. abstract classes, those without parameterless constructors).
 		 */
-		public static IList<T> GetInstances<T>()
+        public static IList<T> GetInstances<T>()
+        {
+            var instances = new List<T>();
+            foreach (var assembly in Assemblies)
+                foreach (var type in assembly.GetTypes())
+                    if (IsAssignableFrom(typeof(T), type) && ES3Reflection.HasParameterlessConstructor(type) && !ES3Reflection.IsAbstract(type))
+                        instances.Add((T)Activator.CreateInstance(type));
+            return instances;
+        }
+
+        public static IList<Type> GetDerivedTypes(Type derivedType)
+        {
+            return
+                (
+                    from assembly in Assemblies
+                    from type in assembly.GetTypes()
+                    where IsAssignableFrom(derivedType, type)
+                    select type
+                ).ToList();
+        }
+
+        public static bool IsAssignableFrom(Type a, Type b)
+        {
+            return a.IsAssignableFrom(b);
+        }
+
+        public static Type GetGenericTypeDefinition(Type type)
+        {
+            return type.GetGenericTypeDefinition();
+        }
+
+        public static Type[] GetGenericArguments(Type type)
+        {
+            return type.GetGenericArguments();
+        }
+
+        public static int GetArrayRank(Type type)
+        {
+            return type.GetArrayRank();
+        }
+
+        public static string GetAssemblyQualifiedName(Type type)
+        {
+            return type.AssemblyQualifiedName;
+        }
+
+        public static ES3ReflectedMethod GetMethod(Type type, string methodName, Type[] genericParameters, Type[] parameterTypes)
+        {
+            return new ES3ReflectedMethod(type, methodName, genericParameters, parameterTypes);
+        }
+
+        public static bool TypeIsArray(Type type)
+        {
+            return type.IsArray;
+        }
+
+        public static Type GetElementType(Type type)
+        {
+            return type.GetElementType();
+        }
+
+#if NETFX_CORE
+		public static bool IsAbstract(Type type)
 		{
-			var instances = new List<T>();
-			foreach (var assembly in Assemblies) 
-				foreach (var type in assembly.GetTypes())
-					if (IsAssignableFrom (typeof(T), type) && ES3Reflection.HasParameterlessConstructor (type) && !ES3Reflection.IsAbstract (type)) 
-						instances.Add ((T)Activator.CreateInstance(type));
-			return instances;
+		return type.GetTypeInfo().IsAbstract;
 		}
 
-		public static IList<Type> GetDerivedTypes(Type derivedType)
+		public static bool IsInterface(Type type)
 		{
-			return 
-				(
-					from assembly in Assemblies 
-					from type in assembly.GetTypes()
-					where IsAssignableFrom(derivedType, type)
-					select type
-				).ToList();
+		return type.GetTypeInfo().IsInterface;
 		}
 
-		public static bool IsAssignableFrom(Type a, Type b)
+		public static bool IsGenericType(Type type)
 		{
-			return a.IsAssignableFrom(b);
+		return type.GetTypeInfo().IsGenericType;
 		}
 
-		public static Type GetGenericTypeDefinition(Type type)
+		public static bool IsValueType(Type type)
 		{
-			return type.GetGenericTypeDefinition();
+		return type.GetTypeInfo().IsValueType;
 		}
 
-		public static Type[] GetGenericArguments(Type type)
+		public static bool IsEnum(Type type)
 		{
-			return type.GetGenericArguments();
+		return type.GetTypeInfo().IsEnum;
 		}
 
-		public static int GetArrayRank(Type type)
+		public static bool HasParameterlessConstructor(Type type)
 		{
-			return type.GetArrayRank();
-		}
-
-		public static string GetAssemblyQualifiedName(Type type)
-		{
-			return type.AssemblyQualifiedName;
-		}
-
-		public static ES3ReflectedMethod GetMethod(Type type, string methodName, Type[] genericParameters, Type[] parameterTypes)
-		{
-			return new ES3ReflectedMethod(type, methodName, genericParameters, parameterTypes);
-		}
-			
-		public static bool TypeIsArray(Type type)
-		{
-			return type.IsArray;
-		}
-
-		public static Type GetElementType(Type type)
-		{
-			return type.GetElementType();
-		}
-			
-	#if NETFX_CORE
-	    public static bool IsAbstract(Type type)
-	    {
-	        return type.GetTypeInfo().IsAbstract;
-	    }
-
-	    public static bool IsGenericType(Type type)
-		{
-			return type.GetTypeInfo().IsGenericType;
-		}
-
-	    public static bool IsValueType(Type type)
-		{
-			return type.GetTypeInfo().IsValueType;
-		}
-
-	    public static bool IsEnum(Type type)
-		{
-			return type.GetTypeInfo().IsEnum;
-		}
-
-	    public static bool HasParameterlessConstructor(Type type)
-	    {
-	        foreach (var cInfo in type.GetTypeInfo().DeclaredConstructors)
-	        {
-	            if (!cInfo.IsFamily && !cInfo.IsStatic && cInfo.GetParameters().Length == 0)
-	                return true;
-	        }
-	        return false;
-
-	    }
-
-	    public static ConstructorInfo GetParameterlessConstructor(Type type)
-	    {
-	        foreach (var cInfo in type.GetTypeInfo().DeclaredConstructors)
-	        {
-	            if (!cInfo.IsFamily && cInfo.GetParameters().Length == 0)
-	                return cInfo;
-	        }
-	        return null;
-	    }
-
-	    public static string GetShortAssemblyQualifiedName(Type type)
-	    {
-	        return type.FullName + "," + type.GetTypeInfo().Assembly.GetName().Name;
-	    }
-
-	    public static PropertyInfo GetProperty(Type type, string propertyName)
-	    {
-	        return type.GetTypeInfo().GetDeclaredProperty(propertyName);
-	    }
-
-	    public static FieldInfo GetField(Type type, string fieldName)
-	    {
-	        return type.GetTypeInfo().GetDeclaredField(fieldName);
-	    }
-
-	    public static bool IsPrimitive(Type type)
-		{
-			return (type.GetTypeInfo().IsPrimitive || type == typeof(string) || type == typeof(decimal));
-		}
-
-		public static bool AttributeIsDefined(MemberInfo info, Type attributeType)
-		{
-			var attributes = info.GetCustomAttributes(attributeType, true);
-			foreach(var attribute in attributes)
-				return true;
-			return false;
-		}
-
-		public static bool AttributeIsDefined(Type type, Type attributeType)
-		{
-			var attributes = type.GetTypeInfo().GetCustomAttributes(attributeType, true);
-			foreach(var attribute in attributes)
-				return true;
-			return false;
-		}
-
-		public static bool ImplementsInterface(Type type, Type interfaceType)
-		{
-			return type.GetTypeInfo().ImplementedInterfaces.Contains(interfaceType);
-		}
-	#else
-	    public static bool IsAbstract(Type type)
-		{
-			return type.IsAbstract;
-		}
-
-	    public static bool IsGenericType(Type type)
-	    {
-	        return type.IsGenericType;
-	    }
-
-	    public static bool IsValueType(Type type)
-	    {
-	        return type.IsValueType;
-	    }
-
-	    public static bool IsEnum(Type type)
-	    {
-	        return type.IsEnum;
-	    }
-
-	    public static bool HasParameterlessConstructor(Type type)
-		{
-			return type.GetConstructor (Type.EmptyTypes) != null || IsValueType(type);
+		    return GetParameterlessConstructor(type) != null;
 		}
 
 		public static ConstructorInfo GetParameterlessConstructor(Type type)
 		{
-			return type.GetConstructor (Type.EmptyTypes);
+		    foreach (var cInfo in type.GetTypeInfo().DeclaredConstructors)
+		        if (!cInfo.IsStatic && cInfo.GetParameters().Length == 0)
+		            return cInfo;
+		    return null;
 		}
 
 		public static string GetShortAssemblyQualifiedName(Type type)
 		{
-			return type.FullName + "," + type.Assembly.GetName().Name;
+		if (IsPrimitive (type))
+		return type.ToString ();
+		return type.FullName + "," + type.GetTypeInfo().Assembly.GetName().Name;
 		}
 
 		public static PropertyInfo GetProperty(Type type, string propertyName)
 		{
-			return type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        	var property = type.GetTypeInfo().GetDeclaredProperty(propertyName);
+            if (property == null && type.BaseType != typeof(object))
+                return GetProperty(type.BaseType, propertyName);
+            return property;
 		}
 
 		public static FieldInfo GetField(Type type, string fieldName)
 		{
-			return type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+		return type.GetTypeInfo().GetDeclaredField(fieldName);
 		}
 
-	    public static bool IsPrimitive(Type type)
-	    {
-	        return (type.IsPrimitive || type == typeof(string) || type == typeof(decimal));
-	    }
+        public static MethodInfo[] GetMethods(Type type, string methodName)
+        {
+            return type.GetTypeInfo().GetDeclaredMethods(methodName);
+        }
+
+		public static bool IsPrimitive(Type type)
+		{
+		return (type.GetTypeInfo().IsPrimitive || type == typeof(string) || type == typeof(decimal));
+		}
 
 		public static bool AttributeIsDefined(MemberInfo info, Type attributeType)
 		{
-			return Attribute.IsDefined(info, attributeType, true);
+		var attributes = info.GetCustomAttributes(attributeType, true);
+		foreach(var attribute in attributes)
+		return true;
+		return false;
 		}
 
 		public static bool AttributeIsDefined(Type type, Type attributeType)
 		{
-			return type.IsDefined(attributeType, true);
+		var attributes = type.GetTypeInfo().GetCustomAttributes(attributeType, true);
+		foreach(var attribute in attributes)
+		return true;
+		return false;
 		}
 
 		public static bool ImplementsInterface(Type type, Type interfaceType)
 		{
-			return (type.GetInterface(interfaceType.Name) != null);
+		return type.GetTypeInfo().ImplementedInterfaces.Contains(interfaceType);
 		}
-	#endif
 
-	/*
+        public static Type BaseType(Type type)
+        {
+            return type.GetTypeInfo().BaseType;
+        }
+#else
+        public static bool IsAbstract(Type type)
+        {
+            return type.IsAbstract;
+        }
+
+        public static bool IsInterface(Type type)
+        {
+            return type.IsInterface;
+        }
+
+        public static bool IsGenericType(Type type)
+        {
+            return type.IsGenericType;
+        }
+
+        public static bool IsValueType(Type type)
+        {
+            return type.IsValueType;
+        }
+
+        public static bool IsEnum(Type type)
+        {
+            return type.IsEnum;
+        }
+
+        public static bool HasParameterlessConstructor(Type type)
+        {
+            if (IsValueType(type) || GetParameterlessConstructor(type) != null)
+                return true;
+            return false;
+        }
+
+        public static ConstructorInfo GetParameterlessConstructor(Type type)
+        {
+            var constructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            foreach (var constructor in constructors)
+                if (constructor.GetParameters().Length == 0)
+                    return constructor;
+            return null;
+        }
+
+        public static string GetShortAssemblyQualifiedName(Type type)
+        {
+            if (IsPrimitive(type))
+                return type.ToString();
+            return type.FullName + "," + type.Assembly.GetName().Name;
+        }
+
+        public static PropertyInfo GetProperty(Type type, string propertyName)
+        {
+            var property = type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (property == null && BaseType(type) != typeof(object))
+                return GetProperty(BaseType(type), propertyName);
+            return property;
+        }
+
+        public static FieldInfo GetField(Type type, string fieldName)
+        {
+            var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null && BaseType(type) != typeof(object))
+                return GetField(BaseType(type), fieldName);
+            return field;
+        }
+
+        public static MethodInfo[] GetMethods(Type type, string methodName)
+        {
+            return type.GetMethods().Where(t => t.Name == methodName).ToArray();
+        }
+
+        public static bool IsPrimitive(Type type)
+        {
+            return (type.IsPrimitive || type == typeof(string) || type == typeof(decimal));
+        }
+
+        public static bool AttributeIsDefined(MemberInfo info, Type attributeType)
+        {
+            return Attribute.IsDefined(info, attributeType, true);
+        }
+
+        public static bool AttributeIsDefined(Type type, Type attributeType)
+        {
+            return type.IsDefined(attributeType, true);
+        }
+
+        public static bool ImplementsInterface(Type type, Type interfaceType)
+        {
+            return (type.GetInterface(interfaceType.Name) != null);
+        }
+
+        public static Type BaseType(Type type)
+        {
+            return type.BaseType;
+        }
+
+        public static Type GetType(string typeString)
+        {
+            switch (typeString)
+            {
+                case "bool":
+                    return typeof(bool);
+                case "byte":
+                    return typeof(byte);
+                case "sbyte":
+                    return typeof(sbyte);
+                case "char":
+                    return typeof(char);
+                case "decimal":
+                    return typeof(decimal);
+                case "double":
+                    return typeof(double);
+                case "float":
+                    return typeof(float);
+                case "int":
+                    return typeof(int);
+                case "uint":
+                    return typeof(uint);
+                case "long":
+                    return typeof(long);
+                case "ulong":
+                    return typeof(ulong);
+                case "short":
+                    return typeof(short);
+                case "ushort":
+                    return typeof(ushort);
+                case "string":
+                    return typeof(string);
+                case "Vector2":
+                    return typeof(Vector2);
+                case "Vector3":
+                    return typeof(Vector3);
+                case "Vector4":
+                    return typeof(Vector4);
+                case "Color":
+                    return typeof(Color);
+                case "Transform":
+                    return typeof(Transform);
+                case "Component":
+                    return typeof(UnityEngine.Component);
+                case "GameObject":
+                    return typeof(GameObject);
+                case "MeshFilter":
+                    return typeof(MeshFilter);
+                case "Material":
+                    return typeof(Material);
+                case "Texture2D":
+                    return typeof(Texture2D);
+                case "UnityEngine.Object":
+                    return typeof(UnityEngine.Object);
+                case "System.Object":
+                    return typeof(object);
+                default:
+                    return Type.GetType(typeString);
+            }
+        }
+
+        public static string GetTypeString(Type type)
+        {
+            if (type == typeof(bool))
+                return "bool";
+            else if (type == typeof(byte))
+                return "byte";
+            else if (type == typeof(sbyte))
+                return "sbyte";
+            else if (type == typeof(char))
+                return "char";
+            else if (type == typeof(decimal))
+                return "decimal";
+            else if (type == typeof(double))
+                return "double";
+            else if (type == typeof(float))
+                return "float";
+            else if (type == typeof(int))
+                return "int";
+            else if (type == typeof(uint))
+                return "uint";
+            else if (type == typeof(long))
+                return "long";
+            else if (type == typeof(ulong))
+                return "ulong";
+            else if (type == typeof(short))
+                return "short";
+            else if (type == typeof(ushort))
+                return "ushort";
+            else if (type == typeof(string))
+                return "string";
+            else if (type == typeof(Vector2))
+                return "Vector2";
+            else if (type == typeof(Vector3))
+                return "Vector3";
+            else if (type == typeof(Vector4))
+                return "Vector4";
+            else if (type == typeof(Color))
+                return "Color";
+            else if (type == typeof(Transform))
+                return "Transform";
+            else if (type == typeof(UnityEngine.Component))
+                return "Component";
+            else if (type == typeof(GameObject))
+                return "GameObject";
+            else if (type == typeof(MeshFilter))
+                return "MeshFilter";
+            else if (type == typeof(Material))
+                return "Material";
+            else if (type == typeof(Texture2D))
+                return "Texture2D";
+            else if (type == typeof(UnityEngine.Object))
+                return "UnityEngine.Object";
+            else if (type == typeof(object))
+                return "System.Object";
+            else
+                return GetShortAssemblyQualifiedName(type);
+        }
+#endif
+
+        /*
 	 * 	Allows us to use FieldInfo and PropertyInfo interchangably.
 	 */
-		public struct ES3ReflectedMember
-		{
-			// The FieldInfo or PropertyInfo for this field.
-			private FieldInfo fieldInfo;
-			private PropertyInfo propertyInfo;
-			public bool isProperty;
+        public struct ES3ReflectedMember
+        {
+            // The FieldInfo or PropertyInfo for this field.
+            private FieldInfo fieldInfo;
+            private PropertyInfo propertyInfo;
+            public bool isProperty;
 
-			public bool IsNull { get{ return fieldInfo == null && propertyInfo == null; } }
-			public string Name { get{ return (isProperty ? propertyInfo.Name : fieldInfo.Name); } }
-			public Type MemberType { get{ return (isProperty ? propertyInfo.PropertyType : fieldInfo.FieldType); } }
-			public bool IsPublic { get{ return (isProperty ? (propertyInfo.GetGetMethod(true).IsPublic && propertyInfo.GetSetMethod(true).IsPublic) : fieldInfo.IsPublic); } }
-			public bool IsProtected { get{ return (isProperty ? (propertyInfo.GetGetMethod(true).IsFamily) : fieldInfo.IsFamily); } }
+            public bool IsNull { get { return fieldInfo == null && propertyInfo == null; } }
+            public string Name { get { return (isProperty ? propertyInfo.Name : fieldInfo.Name); } }
+            public Type MemberType { get { return (isProperty ? propertyInfo.PropertyType : fieldInfo.FieldType); } }
+            public bool IsPublic { get { return (isProperty ? (propertyInfo.GetGetMethod(true).IsPublic && propertyInfo.GetSetMethod(true).IsPublic) : fieldInfo.IsPublic); } }
+            public bool IsProtected { get { return (isProperty ? (propertyInfo.GetGetMethod(true).IsFamily) : fieldInfo.IsFamily); } }
+            public bool IsStatic { get { return (isProperty ? (propertyInfo.GetGetMethod(true).IsStatic) : fieldInfo.IsStatic); } }
 
-			public ES3ReflectedMember(System.Object fieldPropertyInfo)
-			{
-				if(fieldPropertyInfo == null)
-				{
-					this.propertyInfo = null;
-					this.fieldInfo = null;
-					isProperty = false;
-					return;
-				}
+            public ES3ReflectedMember(System.Object fieldPropertyInfo)
+            {
+                if (fieldPropertyInfo == null)
+                {
+                    this.propertyInfo = null;
+                    this.fieldInfo = null;
+                    isProperty = false;
+                    return;
+                }
 
-				isProperty = ES3Reflection.IsAssignableFrom(typeof(PropertyInfo), fieldPropertyInfo.GetType());
-				if(isProperty)
-				{
-					this.propertyInfo = (PropertyInfo)fieldPropertyInfo;
-					this.fieldInfo = null;
-				}
-				else
-				{
-					this.fieldInfo = (FieldInfo)fieldPropertyInfo;
-					this.propertyInfo = null;
-				}
-			}
+                isProperty = ES3Reflection.IsAssignableFrom(typeof(PropertyInfo), fieldPropertyInfo.GetType());
+                if (isProperty)
+                {
+                    this.propertyInfo = (PropertyInfo)fieldPropertyInfo;
+                    this.fieldInfo = null;
+                }
+                else
+                {
+                    this.fieldInfo = (FieldInfo)fieldPropertyInfo;
+                    this.propertyInfo = null;
+                }
+            }
 
-			public void SetValue(System.Object obj, System.Object value)
-			{
-				if(isProperty)
-					propertyInfo.SetValue(obj, value, null);
-				else
-					fieldInfo.SetValue(obj, value);
-			}
+            public void SetValue(System.Object obj, System.Object value)
+            {
+                if (isProperty)
+                    propertyInfo.SetValue(obj, value, null);
+                else
+                    fieldInfo.SetValue(obj, value);
+            }
 
-			public System.Object GetValue(System.Object obj)
-			{
-				if(isProperty)
-					return propertyInfo.GetValue(obj, null);
-				else
-					return fieldInfo.GetValue(obj);
-			}
-	    }
+            public System.Object GetValue(System.Object obj)
+            {
+                if (isProperty)
+                    return propertyInfo.GetValue(obj, null);
+                else
+                    return fieldInfo.GetValue(obj);
+            }
+        }
 
-	    public class ES3ReflectedMethod
-		{
-			private MethodInfo method;
+        public class ES3ReflectedMethod
+        {
+            private MethodInfo method;
 
-			public ES3ReflectedMethod(Type type, string methodName, Type[] genericParameters, Type[] parameterTypes)
-			{
-				MethodInfo nonGenericMethod = type.GetMethod(methodName, parameterTypes);
-				this.method = nonGenericMethod.MakeGenericMethod(genericParameters);
-			}
+            public ES3ReflectedMethod(Type type, string methodName, Type[] genericParameters, Type[] parameterTypes)
+            {
+                MethodInfo nonGenericMethod = type.GetMethod(methodName, parameterTypes);
+                this.method = nonGenericMethod.MakeGenericMethod(genericParameters);
+            }
 
-			public object Invoke(object obj, object[] parameters = null)
-			{
-				return method.Invoke(obj, parameters);
-			}
-		}
+            public ES3ReflectedMethod(Type type, string methodName, Type[] genericParameters, Type[] parameterTypes, BindingFlags bindingAttr)
+            {
+                MethodInfo nonGenericMethod = type.GetMethod(methodName, bindingAttr, null, parameterTypes, null);
+                this.method = nonGenericMethod.MakeGenericMethod(genericParameters);
+            }
 
-	}
+            public object Invoke(object obj, object[] parameters = null)
+            {
+                return method.Invoke(obj, parameters);
+            }
+        }
+
+    }
 }

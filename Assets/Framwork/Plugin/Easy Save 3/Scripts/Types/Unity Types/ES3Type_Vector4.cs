@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("x", "y", "z", "w")]
 	public class ES3Type_Vector4 : ES3Type
 	{

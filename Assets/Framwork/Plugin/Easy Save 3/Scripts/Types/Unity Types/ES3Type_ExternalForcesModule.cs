@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("enabled", "multiplier")]
 	public class ES3Type_ExternalForcesModule : ES3Type
 	{

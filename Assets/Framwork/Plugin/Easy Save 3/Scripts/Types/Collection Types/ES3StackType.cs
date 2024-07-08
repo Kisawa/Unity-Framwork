@@ -2,9 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using ES3Internal;
+using System.Reflection;
+using System.Linq;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	public class ES3StackType : ES3CollectionType
 	{
 		public ES3StackType(Type type) : base(type){}
@@ -16,7 +19,7 @@ namespace ES3Types
 			if(elementType == null)
 				throw new ArgumentNullException("ES3Type argument cannot be null.");
 
-			writer.StartWriteCollection(list.Count);
+			//writer.StartWriteCollection();
 
 			int i = 0;
 			foreach(object item in list)
@@ -27,12 +30,13 @@ namespace ES3Types
 				i++;
 			}
 
-			writer.EndWriteCollection();
+			//writer.EndWriteCollection();
 		}
 
 		public override object Read<T>(ES3Reader reader)
 		{
-			if(reader.StartReadCollection())
+            return Read(reader);
+			/*if(reader.StartReadCollection())
 				return null;
 
 			var stack = new Stack<T>();
@@ -48,7 +52,7 @@ namespace ES3Types
 			}
 
 			reader.EndReadCollection();
-			return stack;
+			return stack;*/
 		}
 
 		public override void ReadInto<T>(ES3Reader reader, object obj)
@@ -105,7 +109,9 @@ namespace ES3Types
 
 			reader.EndReadCollection();
 
-			return ES3Reflection.CreateInstance(type, instance);
+            ES3Reflection.GetMethods(instance.GetType(), "Reverse").FirstOrDefault(t => !t.IsStatic).Invoke(instance, new object[]{});
+            return ES3Reflection.CreateInstance(type, instance);
+            
 		}
 
 		public override void ReadInto(ES3Reader reader, object obj)

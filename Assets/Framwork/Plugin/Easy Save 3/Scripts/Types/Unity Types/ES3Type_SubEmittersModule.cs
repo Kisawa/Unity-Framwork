@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("properties", "systems", "types")]
 	public class ES3Type_SubEmittersModule : ES3Type
 	{

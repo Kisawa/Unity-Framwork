@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("material", "name")]
 	public class ES3Type_Font : ES3UnityObjectType
 	{
@@ -15,7 +16,7 @@ namespace ES3Types
 			var instance = (UnityEngine.Font)obj;
 
 			writer.WriteProperty("name", instance.name, ES3Type_string.Instance);
-			writer.WritePropertyByRef("material", instance.material);
+            writer.WriteProperty("material", instance.material);
 		}
 
 		protected override void ReadUnityObject<T>(ES3Reader reader, object obj)

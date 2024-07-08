@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using UnityEditorInternal;
+using UnityEngine.UI;
 
 namespace Framwork
 {
@@ -29,7 +30,7 @@ namespace Framwork
         SerializedProperty ignoreLocalDataTypeNamesProp;
         SerializedProperty ignoreAssetUtilityTypeNamesProp;
         SerializedProperty fguiConfigLoadCallbackProp;
-        SerializedProperty mainUITypeFullNameProp;
+        SerializedProperty enterUITypeDataProp;
         SerializedProperty mainUIShowCallbackProp;
         SerializedProperty loadSingleDataTableCallbackProp;
         SerializedProperty loadAllDataTableCallbackProp;
@@ -43,7 +44,7 @@ namespace Framwork
         SerializedProperty runTimeSequenceProp;
         ReorderableList runTimeSequenceList;
         string[] singleFguiTypeNamesWithNone;
-        string[] singleFguiFullTypeNamesWithNone;
+        TypeData[] singleFguiFullTypeDataWithNone;
         string[] singleFguiTypeNames;
         string[] noSingleFguiTypeNames;
         string[] dataTableTypeNames;
@@ -98,7 +99,7 @@ namespace Framwork
             ignoreLocalDataTypeNamesProp = serializedObject.FindProperty("ignoreLocalDataTypeNames");
             ignoreAssetUtilityTypeNamesProp = serializedObject.FindProperty("ignoreAssetUtilityTypeNames");
             fguiConfigLoadCallbackProp = serializedObject.FindProperty("fguiConfigLoadCallback");
-            mainUITypeFullNameProp = serializedObject.FindProperty("enterUITypeFullName");
+            enterUITypeDataProp = serializedObject.FindProperty("enterUITypeData");
             mainUIShowCallbackProp = serializedObject.FindProperty("enterUIShowCallback");
             loadSingleDataTableCallbackProp = serializedObject.FindProperty("loadSingleDataTableCallback");
             loadAllDataTableCallbackProp = serializedObject.FindProperty("loadAllDataTableCallback");
@@ -212,40 +213,50 @@ namespace Framwork
                 EditorGUILayout.BeginVertical("ColorPickerSliderBackground");
 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("FguiDesignScreenSize:", labelStyle, GUILayout.Width(150));
+                EditorGUILayout.LabelField("Fgui Assets Resources Path:", labelStyle, GUILayout.Width(150));
+                EditorGUILayout.LabelField($"Resources/{configuration.AssetsResourcesPath}", labelStyle);
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Fgui Design Screen Size:", labelStyle, GUILayout.Width(150));
                 EditorGUILayout.LabelField($"{configuration.FguiDesignScreenSize.x}x{configuration.FguiDesignScreenSize.y}", labelStyle);
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.BeginHorizontal();
-                GUIContent fontContent = new GUIContent("FguiFontAssetName:", "Font asset path: \"[Resources]\" or \"[Resources]/Fonts\"");
+                GUIContent fontContent = new GUIContent("Fgui Font Asset Name:", "Font asset path: \"[Resources]\" or \"[Resources]/Fonts\"");
                 EditorGUILayout.LabelField(fontContent, labelStyle, GUILayout.Width(150));
                 EditorGUILayout.LabelField(configuration.FguiFontAssetName, labelStyle);
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.BeginHorizontal();
-                GUIContent assetTypeContent = new GUIContent("FguiAssetType:", "\"Resources\" or \"Addressable\"");
-                EditorGUILayout.LabelField(assetTypeContent, labelStyle, GUILayout.Width(150));
-                EditorGUILayout.LabelField(configuration.FguiAssetType.ToString(), labelStyle);
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("CommonPackName:", labelStyle, GUILayout.Width(150));
+                EditorGUILayout.LabelField("CommonPack Name:", labelStyle, GUILayout.Width(150));
                 EditorGUILayout.LabelField(configuration.CommonPackName, labelStyle);
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("LanguageAssetName:", labelStyle, GUILayout.Width(150));
+                EditorGUILayout.LabelField("LanguageAsset Name:", labelStyle, GUILayout.Width(150));
                 EditorGUILayout.LabelField(configuration.LanguageAssetName, labelStyle);
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.BeginHorizontal();
                 GUIContent mainUIContent = new GUIContent("EnterUI:", "Game enter ui");
                 EditorGUILayout.LabelField(mainUIContent, labelStyle, GUILayout.Width(150));
-                string selectTypeFullName = mainUITypeFullNameProp.stringValue;
-                int index = Array.IndexOf(singleFguiFullTypeNamesWithNone, selectTypeFullName);
+                string selectTypeAssemblyName = enterUITypeDataProp.FindPropertyRelative("AssemblyName").stringValue;
+                string selectTypeName = enterUITypeDataProp.FindPropertyRelative("TypeName").stringValue;
+                int index = -1;
+                for (int i = 0; i < singleFguiFullTypeDataWithNone.Length; i++)
+                {
+                    TypeData typeData = singleFguiFullTypeDataWithNone[i];
+                    if (typeData.AssemblyName == selectTypeAssemblyName && typeData.TypeName == selectTypeName)
+                    {
+                        index = i;
+                        break;
+                    }
+                }
                 if (index == -1) index = 0;
                 index = EditorGUILayout.Popup(index, singleFguiTypeNamesWithNone, GUILayout.MinWidth(150));
-                mainUITypeFullNameProp.stringValue = singleFguiFullTypeNamesWithNone[index];
+                enterUITypeDataProp.FindPropertyRelative("AssemblyName").stringValue = singleFguiFullTypeDataWithNone[index].AssemblyName;
+                enterUITypeDataProp.FindPropertyRelative("TypeName").stringValue = singleFguiFullTypeDataWithNone[index].TypeName;
                 EditorGUILayout.LabelField(configuration.LanguageAssetName, labelStyle);
                 EditorGUILayout.EndHorizontal();
 
@@ -255,10 +266,15 @@ namespace Framwork
                 if (singleFguiTypeNames.Length == 0)
                 {
                     selectSingleFguiMaskProp.intValue = 0;
-                    EditorGUILayout.Popup(selectSingleFguiMaskProp.intValue, new string[] { "None" }, GUILayout.Width(150));
+                    EditorGUILayout.Popup(0, new string[] { "None" }, GUILayout.Width(150));
                 }
                 else
-                    selectSingleFguiMaskProp.intValue = EditorGUILayout.MaskField(selectSingleFguiMaskProp.intValue, singleFguiTypeNames, GUILayout.Width(150));
+                {
+                    EditorGUI.BeginChangeCheck();
+                    int mask = EditorGUILayout.MaskField(selectSingleFguiMaskProp.intValue, singleFguiTypeNames, GUILayout.Width(150));
+                    if (EditorGUI.EndChangeCheck())
+                        selectSingleFguiMaskProp.intValue = mask;
+                }
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.BeginHorizontal();
@@ -270,7 +286,12 @@ namespace Framwork
                     EditorGUILayout.Popup(selectNoSingleFguiMaskProp.intValue, new string[] { "None" }, GUILayout.Width(150));
                 }
                 else
-                    selectNoSingleFguiMaskProp.intValue = EditorGUILayout.MaskField(selectNoSingleFguiMaskProp.intValue, noSingleFguiTypeNames, GUILayout.Width(150));
+                {
+                    EditorGUI.BeginChangeCheck();
+                    int mask = EditorGUILayout.MaskField(selectNoSingleFguiMaskProp.intValue, noSingleFguiTypeNames, GUILayout.Width(150));
+                    if (EditorGUI.EndChangeCheck())
+                        selectNoSingleFguiMaskProp.intValue = mask;
+                }
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.EndVertical();
@@ -931,7 +952,7 @@ namespace Framwork
                 {
                     string key = $"{saveName}-{getTypeName(fieldType)}";
                     FieldInfo[] fieldInfos;
-                    if (ES3.UnsafeTypeList.Contains(fieldType))
+                    if (fieldType.IsDefined(typeof(UnsafeAttribute), true))
                         fieldInfos = fieldType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
                     else
                         fieldInfos = fieldType.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
@@ -1378,7 +1399,7 @@ namespace Framwork
                     float width = rect.width;
                     float rect_x = rect.x;
                     FieldInfo[] fieldInfos;
-                    if (ES3.UnsafeTypeList.Contains(type))
+                    if (type.IsDefined(typeof(UnsafeAttribute), true))
                         fieldInfos = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
                     else
                         fieldInfos = type.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
@@ -1741,14 +1762,14 @@ namespace Framwork
             Type[] singleFguiTypes = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(x => x.GetTypes().Where(y => typeof(SingleFgui).IsAssignableFrom(y) && y.IsClass && !y.IsAbstract)).ToArray();
             singleFguiTypeNamesWithNone = new string[singleFguiTypes.Length + 1];
-            singleFguiFullTypeNamesWithNone = new string[singleFguiTypes.Length + 1];
+            singleFguiFullTypeDataWithNone = new TypeData[singleFguiTypes.Length + 1];
             singleFguiTypeNames = new string[singleFguiTypes.Length];
             singleFguiTypeNamesWithNone[0] = "None";
             for (int i = 0; i < singleFguiTypes.Length; i++)
             {
                 Type singleFguiType = singleFguiTypes[i];
                 singleFguiTypeNamesWithNone[i + 1] = singleFguiType.Name;
-                singleFguiFullTypeNamesWithNone[i + 1] = singleFguiType.FullName;
+                singleFguiFullTypeDataWithNone[i + 1] = new TypeData() { AssemblyName = singleFguiType.Assembly.FullName, TypeName = singleFguiType.FullName };
                 singleFguiTypeNames[i] = singleFguiType.Name;
             }
             Type[] noSingleFguiTypes = AppDomain.CurrentDomain.GetAssemblies()

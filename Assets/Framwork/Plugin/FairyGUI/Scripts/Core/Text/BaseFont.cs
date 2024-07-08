@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace FairyGUI
 {
@@ -10,7 +12,7 @@ namespace FairyGUI
         /// <summary>
         /// The name of this font object.
         /// </summary>
-        public string name { get; protected set; }
+        public string name;
 
         /// <summary>
         /// The texture of this font object.
@@ -33,6 +35,11 @@ namespace FairyGUI
         public bool customBoldAndItalic;
 
         /// <summary>
+        /// If true, it will use extra vertices(4 direction) to enhance outline effect
+        /// </summary>
+        public bool customOutline;
+
+        /// <summary>
         /// The shader for this font object.
         /// </summary>
         public string shader;
@@ -42,26 +49,51 @@ namespace FairyGUI
         /// </summary>
         public bool keepCrisp;
 
-        public PackageItem packageItem;
+        /// <summary>
+        /// 
+        /// </summary>
+        public int version;
+
+        protected internal static bool textRebuildFlag;
+
+        protected const float SupScale = 0.58f;
+        protected const float SupOffset = 0.33f;
 
         virtual public void SetFormat(TextFormat format, float fontSizeScale)
         {
         }
 
-        virtual public void PrepareCharacters(string text)
+        virtual public void PrepareCharacters(string text, TextFormat format, float fontSizeScale)
         {
         }
 
-        virtual public bool GetGlyphSize(char ch, out float width, out float height)
+        virtual public void Prepare(TextFormat format)
+        {
+        }
+
+        virtual public bool BuildGraphics(NGraphics graphics)
+        {
+            return false;
+        }
+
+        virtual public void StartDraw(NGraphics graphics)
+        {
+        }
+
+        virtual public bool GetGlyph(char ch, out float width, out float height, out float baseline)
         {
             width = 0;
             height = 0;
+            baseline = 0;
             return false;
         }
 
-        virtual public bool GetGlyph(char ch, ref GlyphInfo glyph)
+        virtual public void DrawGlyph(VertexBuffer vb, float x, float y2)
         {
-            return false;
+        }
+
+        virtual public void DrawLine(VertexBuffer vb, float x, float y, float width, int fontSize, int type)
+        {
         }
 
         virtual public bool HasCharacter(char ch)
@@ -69,23 +101,13 @@ namespace FairyGUI
             return false;
         }
 
-        public BaseFont()
+        virtual public int GetLineHeight(int size)
+        {
+            return 0;
+        }
+
+        virtual public void Dispose()
         {
         }
-    }
-
-    /// <summary>
-    /// Character info.
-    /// </summary>
-    public struct GlyphInfo
-    {
-        public Vector2 vertMin;
-        public Vector2 vertMax;
-        public Vector3 uvBottomLeft;
-        public Vector3 uvTopLeft;
-        public Vector3 uvTopRight;
-        public Vector3 uvBottomRight;
-        public float width;
-        public float height;
     }
 }

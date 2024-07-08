@@ -2,6 +2,7 @@ using System;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("size", "density", "isTrigger", "usedByEffector", "offset", "sharedMaterial", "enabled")]
 	public class ES3Type_BoxCollider2D : ES3ComponentType
 	{

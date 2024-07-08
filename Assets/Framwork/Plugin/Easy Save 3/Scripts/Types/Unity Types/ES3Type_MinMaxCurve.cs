@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("mode", "curveMultiplier", "curveMax", "curveMin", "constantMax", "constantMin", "constant", "curve")]
 	public class ES3Type_MinMaxCurve : ES3Type
 	{

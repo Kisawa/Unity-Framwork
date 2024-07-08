@@ -13,6 +13,7 @@ namespace FairyGUI
     {
         private GLoader _agent;
         private object _sourceData;
+        private GObject _source;
 
         private static DragDropManager _inst;
         public static DragDropManager inst
@@ -25,6 +26,13 @@ namespace FairyGUI
             }
         }
 
+#if UNITY_2019_3_OR_NEWER
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void InitializeOnLoad()
+        {
+            _inst = null;
+        }
+#endif
         public DragDropManager()
         {
             _agent = (GLoader)UIObjectFactory.NewObject(ObjectType.Loader);
@@ -72,6 +80,7 @@ namespace FairyGUI
                 return;
 
             _sourceData = sourceData;
+            _source = source;
             _agent.url = icon;
             GRoot.inst.AddChild(_agent);
             _agent.xy = GRoot.inst.GlobalToLocal(Stage.inst.GetTouchPosition(touchPointID));
@@ -100,7 +109,9 @@ namespace FairyGUI
             GRoot.inst.RemoveChild(_agent);
 
             object sourceData = _sourceData;
+            GObject source = _source;
             _sourceData = null;
+            _source = null;
 
             GObject obj = GRoot.inst.touchTarget;
             while (obj != null)
@@ -108,7 +119,7 @@ namespace FairyGUI
                 if (obj.hasEventListeners("onDrop"))
                 {
                     obj.RequestFocus();
-                    obj.DispatchEvent("onDrop", sourceData);
+                    obj.DispatchEvent("onDrop", sourceData, source);
                     return;
                 }
                 obj = obj.parent;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using FairyGUI.Utils;
 
@@ -193,7 +194,7 @@ namespace FairyGUI
         /// <param name="aHeight"></param>
         /// <param name="points"></param>
         /// <param name="fillColor"></param>
-        public void DrawPolygon(float aWidth, float aHeight, Vector2[] points, Color fillColor)
+        public void DrawPolygon(float aWidth, float aHeight, IList<Vector2> points, Color fillColor)
         {
             this.SetSize(aWidth, aHeight);
             _shape.DrawPolygon(points, fillColor);
@@ -208,7 +209,7 @@ namespace FairyGUI
         /// <param name="fillColor"></param>
         /// <param name="lineSize"></param>
         /// <param name="lineColor"></param>
-        public void DrawPolygon(float aWidth, float aHeight, Vector2[] points, Color fillColor, float lineSize, Color lineColor)
+        public void DrawPolygon(float aWidth, float aHeight, IList<Vector2> points, Color fillColor, float lineSize, Color lineColor)
         {
             this.SetSize(aWidth, aHeight);
             _shape.DrawPolygon(points, fillColor, lineSize, lineColor);

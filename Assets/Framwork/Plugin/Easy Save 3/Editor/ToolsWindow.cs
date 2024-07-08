@@ -16,36 +16,51 @@ namespace ES3Editor
 
 			EditorGUILayout.BeginHorizontal(style.area);
 
-			if(GUILayout.Button("Open Persistent Data Path"))
-				OSFileBrowser.Open(Application.persistentDataPath);
+            if (GUILayout.Button("Open Persistent Data Path"))
+                OpenPersistentDataPath();
 
 			EditorGUILayout.EndHorizontal();
 
 			EditorGUILayout.BeginHorizontal(style.area);
 
-			if(GUILayout.Button("Clear Persistent Data Path"))
-			{
-				if(EditorUtility.DisplayDialog("Clear Persistent Data Path", "Are you sure you wish to clear the persistent data path?\n This action cannot be reversed.", "Clear", "Cancel"))
-				{
-					System.IO.DirectoryInfo di = new DirectoryInfo(Application.persistentDataPath);
+            if (GUILayout.Button("Clear Persistent Data Path"))
+                ClearPersistentDataPath();
 
-					foreach (FileInfo file in di.GetFiles())
-						file.Delete(); 
-					foreach (DirectoryInfo dir in di.GetDirectories())
-						dir.Delete(true);
-                    Framwork.LocalSaveUtility.RefreshHasInjected();
-				}
-			}
-
-			if(GUILayout.Button("Clear PlayerPrefs"))
-				if(EditorUtility.DisplayDialog("Clear PlayerPrefs", "Are you sure you wish to clear PlayerPrefs?\nThis action cannot be reversed.", "Clear", "Cancel"))
-					PlayerPrefs.DeleteAll();
+            if (GUILayout.Button("Clear PlayerPrefs"))
+                ClearPlayerPrefs();
 
 			EditorGUILayout.EndHorizontal();
 		}
-	}
 
-	public static class OSFileBrowser
+        [MenuItem("Tools/Easy Save 3/Open Persistent Data Path", false, 200)]
+        private static void OpenPersistentDataPath()
+        {
+            EditorUtility.RevealInFinder(Application.persistentDataPath);
+        }
+
+        [MenuItem("Tools/Easy Save 3/Clear Persistent Data Path", false, 200)]
+        private static void ClearPersistentDataPath()
+        {
+            if (EditorUtility.DisplayDialog("Clear Persistent Data Path", "Are you sure you wish to clear the persistent data path?\n This action cannot be reversed.", "Clear", "Cancel"))
+            {
+                System.IO.DirectoryInfo di = new DirectoryInfo(Application.persistentDataPath);
+
+                foreach (FileInfo file in di.GetFiles())
+                    file.Delete();
+                foreach (DirectoryInfo dir in di.GetDirectories())
+                    dir.Delete(true);
+            }
+        }
+
+        [MenuItem("Tools/Easy Save 3/Clear PlayerPrefs", false, 200)]
+        private static void ClearPlayerPrefs()
+        {
+            if (EditorUtility.DisplayDialog("Clear PlayerPrefs", "Are you sure you wish to clear PlayerPrefs?\nThis action cannot be reversed.", "Clear", "Cancel"))
+                PlayerPrefs.DeleteAll();
+        }
+    }
+
+	/*public static class OSFileBrowser
 	{
 		public static bool IsInMacOS
 		{
@@ -108,20 +123,15 @@ namespace ES3Editor
 			string winPath = path.Replace("/", "\\"); // windows explorer doesn't like forward slashes
 
 			if ( System.IO.Directory.Exists(winPath) ) // if path requested is a folder, automatically open insides of that folder
-			{
 				openInsidesOfFolder = true;
-			}
 
 			try
 			{
-				System.Diagnostics.Process.Start("explorer.exe", (openInsidesOfFolder ? "/root," : "/select,") + winPath);
-			}
+                System.Diagnostics.Process.Start("explorer.exe", (openInsidesOfFolder ? "/root," : "/select,") + "\"" + winPath + "\"");
+            }
 			catch ( System.ComponentModel.Win32Exception e )
 			{
-				// tried to open win explorer in mac
-				// just silently skip error
-				// we currently have no platform define for the current OS we are in, so we resort to this
-				e.HelpLink = ""; // do anything with this variable to silence warning about not using it
+				e.HelpLink = "";
 			}
 		}
 
@@ -141,5 +151,5 @@ namespace ES3Editor
 				OpenInMac(path);
 			}
 		}
-	}
+	}*/
 }

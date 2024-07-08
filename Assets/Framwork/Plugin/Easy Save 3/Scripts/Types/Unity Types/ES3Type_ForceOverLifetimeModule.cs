@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("enabled", "x", "y", "z", "xMultiplier", "yMultiplier", "zMultiplier", "space", "randomized")]
 	public class ES3Type_ForceOverLifetimeModule : ES3Type
 	{

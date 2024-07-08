@@ -6,6 +6,7 @@ using ES3Internal;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	internal class ES3ReflectedType : ES3Type
 	{
 		public ES3ReflectedType(Type type) : base(type)
@@ -55,7 +56,7 @@ namespace ES3Types
 				else
 					writer.WriteProperty(property.name, property.reflectedMember.GetValue(obj), ES3TypeMgr.GetOrCreateES3Type(property.type));
 			}
-		}
+        }
 
 		public override object Read<T>(ES3Reader reader)
 		{
@@ -72,8 +73,8 @@ namespace ES3Types
 			// If we're loading a reference, load it. Else, create an instance.
 			if(propertyName == ES3ReferenceMgrBase.referencePropertyName)
 			{
-				long id = reader.Read<long>(ES3Type_long.Instance);
-				obj = ES3ReferenceMgrBase.Current.Get(id);
+				long id = reader.Read_ref();
+				obj = ES3ReferenceMgrBase.Current.Get(id, type);
 				if(obj == null)
 				{
 					// If an instance isn't already registered for this object, create an instance and register the reference.

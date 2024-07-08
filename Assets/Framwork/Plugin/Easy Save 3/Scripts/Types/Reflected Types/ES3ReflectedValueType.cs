@@ -3,16 +3,19 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using ES3Internal;
+using Framwork;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	internal class ES3ReflectedValueType : ES3Type
 	{
 		public ES3ReflectedValueType(Type type) : base(type)
 		{
 			isReflectedType = true;
-			GetMembers(!Framwork.ES3.UnsafeTypeList.Contains(type));
-		}
+            bool safe = !type.IsDefined(typeof(UnsafeAttribute), true);
+            GetMembers(safe);
+        }
 
 		public override void Write(object obj, ES3Writer writer)
 		{

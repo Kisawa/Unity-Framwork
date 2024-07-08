@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("filterMode", "anisoLevel", "wrapMode", "mipMapBias", "rawTextureData")]
 	public class ES3Type_Texture : ES3Type
 	{

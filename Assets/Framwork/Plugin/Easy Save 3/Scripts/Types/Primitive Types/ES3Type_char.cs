@@ -1,6 +1,6 @@
-﻿
-namespace ES3Types
+﻿namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	public class ES3Type_char : ES3Type
 	{
 		public static ES3Type Instance = null;

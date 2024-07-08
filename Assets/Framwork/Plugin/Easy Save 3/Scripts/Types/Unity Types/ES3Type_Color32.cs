@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("r", "g", "b", "a")]
 	public class ES3Type_Color32 : ES3Type
 	{

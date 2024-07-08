@@ -4,5 +4,8 @@ using UnityEngine;
 
 namespace Framwork
 {
-    public abstract class NoSingleFgui : FguiUtility { }
+    public abstract class NoSingleFgui : FguiUtility 
+    {
+        protected override bool MakeFullScreen => false;
+    }
 }

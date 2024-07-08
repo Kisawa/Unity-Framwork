@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace ES3Types
 {
-	[ES3PropertiesAttribute("sharedMesh", "convex", "inflateMesh", "skinWidth", "enabled", "isTrigger", "contactOffset", "material")]
+	[UnityEngine.Scripting.Preserve]
+	[ES3PropertiesAttribute("sharedMesh", "convex", "inflateMesh", "skinWidth", "enabled", "isTrigger", "contactOffset", "sharedMaterial")]
 	public class ES3Type_MeshCollider : ES3ComponentType
 	{
 		public static ES3Type Instance = null;
@@ -16,15 +17,15 @@ namespace ES3Types
 		protected override void WriteComponent(object obj, ES3Writer writer)
 		{
 			var instance = (UnityEngine.MeshCollider)obj;
-			
-			writer.WriteProperty("sharedMesh", instance.sharedMesh);
-			writer.WriteProperty("convex", instance.convex, ES3Type_bool.Instance);
-			writer.WriteProperty("inflateMesh", instance.inflateMesh, ES3Type_bool.Instance);
-			writer.WriteProperty("skinWidth", instance.skinWidth, ES3Type_float.Instance);
+
+            writer.WritePropertyByRef("sharedMesh", instance.sharedMesh);
+            writer.WriteProperty("convex", instance.convex, ES3Type_bool.Instance);
+			/*writer.WriteProperty("inflateMesh", instance.inflateMesh, ES3Type_bool.Instance);
+			writer.WriteProperty("skinWidth", instance.skinWidth, ES3Type_float.Instance);*/
 			writer.WriteProperty("enabled", instance.enabled, ES3Type_bool.Instance);
 			writer.WriteProperty("isTrigger", instance.isTrigger, ES3Type_bool.Instance);
 			writer.WriteProperty("contactOffset", instance.contactOffset, ES3Type_float.Instance);
-			writer.WriteProperty("material", instance.material);
+			writer.WriteProperty("material", instance.sharedMaterial);
 		}
 
 		protected override void ReadComponent<T>(ES3Reader reader, object obj)
@@ -41,12 +42,12 @@ namespace ES3Types
 					case "convex":
 						instance.convex = reader.Read<System.Boolean>(ES3Type_bool.Instance);
 						break;
-					case "inflateMesh":
+					/*case "inflateMesh":
 						instance.inflateMesh = reader.Read<System.Boolean>(ES3Type_bool.Instance);
 						break;
 					case "skinWidth":
 						instance.skinWidth = reader.Read<System.Single>(ES3Type_float.Instance);
-						break;
+						break;*/
 					case "enabled":
 						instance.enabled = reader.Read<System.Boolean>(ES3Type_bool.Instance);
 						break;
@@ -57,8 +58,12 @@ namespace ES3Types
 						instance.contactOffset = reader.Read<System.Single>(ES3Type_float.Instance);
 						break;
 					case "material":
-						instance.material = reader.Read<UnityEngine.PhysicMaterial>(ES3Type_PhysicMaterial.Instance);
-						break;
+#if UNITY_6000_0_OR_NEWER
+						instance.sharedMaterial = reader.Read<UnityEngine.PhysicsMaterial>();
+#else
+                        instance.sharedMaterial = reader.Read<UnityEngine.PhysicMaterial>();
+#endif
+                        break;
 					default:
 						reader.Skip();
 						break;

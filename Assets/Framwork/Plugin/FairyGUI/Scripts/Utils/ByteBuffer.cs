@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FairyGUI.Utils
@@ -80,6 +81,13 @@ namespace FairyGUI.Utils
         public byte[] buffer
         {
             get { return _data; }
+            set
+            {
+                _data = value;
+                _pointer = 0;
+                _offset = 0;
+                _length = _data.Length;
+            }
         }
 
         /// <summary>
@@ -332,6 +340,45 @@ namespace FairyGUI.Utils
                 ret[i] = ReadS();
 
             return ret;
+        }
+
+        private static List<GPathPoint> helperPoints = new List<GPathPoint>();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="result"></param>
+        public List<GPathPoint> ReadPath()
+        {
+            helperPoints.Clear();
+            
+            int len = ReadInt();
+            if (len == 0)
+                return helperPoints;
+
+            for (int i = 0; i < len; i++)
+            {
+                GPathPoint.CurveType curveType = (GPathPoint.CurveType)ReadByte();
+                switch (curveType)
+                {
+                    case GPathPoint.CurveType.Bezier:
+                        helperPoints.Add(new GPathPoint(new Vector3(ReadFloat(), ReadFloat(), 0),
+                            new Vector3(ReadFloat(), ReadFloat(), 0)));
+                        break;
+
+                    case GPathPoint.CurveType.CubicBezier:
+                        helperPoints.Add(new GPathPoint(new Vector3(ReadFloat(), ReadFloat(), 0),
+                            new Vector3(ReadFloat(), ReadFloat(), 0),
+                            new Vector3(ReadFloat(), ReadFloat(), 0)));
+                        break;
+
+                    default:
+                        helperPoints.Add(new GPathPoint(new Vector3(ReadFloat(), ReadFloat(), 0), curveType));
+                        break;
+                }
+            }
+
+            return helperPoints;
         }
 
         /// <summary>

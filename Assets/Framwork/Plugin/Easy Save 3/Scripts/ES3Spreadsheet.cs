@@ -4,6 +4,11 @@ using UnityEngine;
 using System.IO;
 using ES3Internal;
 
+#if UNITY_VISUAL_SCRIPTING
+[Unity.VisualScripting.IncludeInSettings(true)]
+#elif BOLT_VISUAL_SCRIPTING
+[Ludiq.IncludeInSettings(true)]
+#endif
 public class ES3Spreadsheet
 {
 	private int cols = 0;
@@ -15,7 +20,7 @@ public class ES3Spreadsheet
 	private const char COMMA_CHAR = ',';
 	private const char NEWLINE_CHAR = '\n';
 	private const string ESCAPED_QUOTE = "\"\"";
-	private static char[] CHARS_TO_ESCAPE = { ',', '"', '\n' };
+	private static char[] CHARS_TO_ESCAPE = { ',', '"', '\n', ' ' };
 
 	public int ColumnCount
 	{
@@ -27,63 +32,102 @@ public class ES3Spreadsheet
 		get{ return rows; }
 	}
 
-	public void SetCell<T>(int col, int row, object value)
-	{
-		// If we're writing a string, add it without formatting.
-		if(typeof(T) == typeof(string))
-		{
-			SetCell(col, row, (string)value);
-			return;
-		}
+    public int GetColumnLength(int col)
+    {
+        if (col >= cols)
+            return 0;
 
-		var settings = new ES3Settings ();
-		using(var ms = new MemoryStream())
-		{
-			using (var jsonWriter = new ES3JSONWriter (ms, settings, false, false))
-				jsonWriter.Write(value, ES3.ReferenceMode.ByValue);
+        int maxRow = -1;
 
-			SetCell(col, row, settings.encoding.GetString(ms.ToArray()));
-		}
+        foreach(var index in cells.Keys)
+            if (index.col == col && index.row > maxRow)
+                maxRow = index.row;
 
-		// Expand the spreadsheet if necessary.
-		if(col >= cols)
-			cols = (col+1);
-		if(row >= rows)
-			rows = (row+1);
-	}
+        return maxRow+1;
+    }
 
-	private void SetCell(int col, int row, string value)
+    public int GetRowLength(int row)
+    {
+        if (row >= rows)
+            return 0;
+
+        int maxCol = -1;
+
+        foreach (var index in cells.Keys)
+            if (index.row == row && index.col > maxCol)
+                maxCol = index.col;
+
+        return maxCol + 1;
+    }
+
+    public void SetCell(int col, int row, object value)
+    {
+        var type = value.GetType();
+
+        // If we're writing a string, add it without formatting.
+        if (type == typeof(string))
+        {
+            SetCellString(col, row, (string)value);
+            return;
+        }
+
+        var settings = new ES3Settings();
+        if (ES3Reflection.IsPrimitive(type))
+            SetCellString(col, row, value.ToString());
+        else
+            SetCellString(col, row, settings.encoding.GetString(ES3.Serialize(value, ES3TypeMgr.GetOrCreateES3Type(type))));
+
+        // Expand the spreadsheet if necessary.
+        if (col >= cols)
+            cols = (col + 1);
+        if (row >= rows)
+            rows = (row + 1);
+    }
+
+    private void SetCellString(int col, int row, string value)
 	{
 		cells [new Index (col, row)] = value;
 
 		// Expand the spreadsheet if necessary.
 		if(col >= cols)
 			cols = (col+1);
-		if(row >= rows)
-			rows = (row+1);
-	}
+        if (row >= rows)
+            rows = (row + 1);
+    }
 
-	public T GetCell<T>(int col, int row)
+
+    // Don't create non-generic version of this. Generic parameter is necessary as no type data is stored in the CSV file.
+    public T GetCell<T>(int col, int row)
 	{
-		string value;
+        var val = GetCell(typeof(T), col, row);
 
-		if(col >= cols || row >= rows)
-			throw new System.IndexOutOfRangeException("Cell ("+col+", "+row+") is out of bounds of spreadsheet ("+cols+", "+rows+").");
-
-		if(!cells.TryGetValue(new Index (col, row), out value) || string.IsNullOrEmpty(value))
-			return default(T);
-
-		// IF we're loading a string, simply return the string value.
-		if(typeof(T) == typeof(string))
-			return (T)(object)value;
-
-		var settings = new ES3Settings ();
-		using(var ms = new MemoryStream(settings.encoding.GetBytes(value)))
-			using (var jsonReader = new ES3JSONReader(ms, settings, false))
-				return jsonReader.Read<T>();
+        if (val == null)
+            return default(T);
+        return (T)val;
 	}
 
-	public void Load(string filePath)
+    public object GetCell(System.Type type, int col, int row)
+    {
+        string value;
+
+        if (col >= cols || row >= rows)
+            throw new System.IndexOutOfRangeException("Cell (" + col + ", " + row + ") is out of bounds of spreadsheet (" + cols + ", " + rows + ").");
+
+        if (!cells.TryGetValue(new Index(col, row), out value) || value == null)
+            return null;
+
+        // If we're loading a string, simply return the string value.
+        if (type == typeof(string))
+        {
+            var str = (object)value;
+            return str;
+        }
+
+        var settings = new ES3Settings();
+        return ES3.Deserialize(ES3TypeMgr.GetOrCreateES3Type(type, true), settings.encoding.GetBytes(value), settings);
+    }
+
+    public void Load(string filePath)
 	{
 		Load(new ES3Settings (filePath));
 	}
@@ -159,7 +203,7 @@ public class ES3Spreadsheet
 					value += c;
 			}
 		}
-	}
+    }
 
 	public void Save(string filePath)
 	{
@@ -192,19 +236,20 @@ public class ES3Spreadsheet
 		{
 			// If data already exists and we're appending, we need to prepend a newline.
 			if(append && ES3.FileExists(settings))
-				writer.Write('\n');
+				writer.Write(NEWLINE_CHAR);
 
 			var array = ToArray();
 			for(int row = 0; row < rows; row++)
 			{
 				if(row != 0)
-					writer.Write('\n');
+					writer.Write(NEWLINE_CHAR);
 
 				for(int col = 0; col < cols; col++)
 				{
 					if(col != 0)
-						writer.Write(',');
-					writer.Write( Escape(array [col, row]) );
+						writer.Write(COMMA_CHAR);
+
+                    writer.Write( Escape(array [col, row]) );
 				}
 			}
 		}
@@ -214,7 +259,9 @@ public class ES3Spreadsheet
 
 	private static string Escape(string str, bool isAlreadyWrappedInQuotes=false)
 	{
-		if(string.IsNullOrEmpty(str))
+        if (str == "")
+            return "\"\"";
+		else if(str == null)
 			return null;
 
 		// Now escape any other quotes.

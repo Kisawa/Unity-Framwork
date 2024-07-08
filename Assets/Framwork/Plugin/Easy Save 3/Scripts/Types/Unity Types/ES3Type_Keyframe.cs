@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("time", "value", "inTangent", "outTangent")]
 	public class ES3Type_Keyframe : ES3Type
 	{

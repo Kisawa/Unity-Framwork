@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("center", "size")]
 	public class ES3Type_Bounds : ES3Type
 	{

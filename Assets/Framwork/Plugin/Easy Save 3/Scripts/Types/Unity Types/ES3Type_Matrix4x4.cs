@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("col0", "col1", "col2", "col3")]
 	public class ES3Type_Matrix4x4 : ES3Type
 	{

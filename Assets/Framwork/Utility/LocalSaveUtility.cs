@@ -24,6 +24,8 @@ namespace Framwork
 
         static Dictionary<string, LocalSaveUtility> DataInstanceDictionary = new Dictionary<string, LocalSaveUtility>();
 
+        protected bool Initial = true;
+
         public LocalSaveUtility() { }
 
         protected virtual void Init() { }
@@ -60,7 +62,7 @@ namespace Framwork
             if (DataInstanceDictionary.Count == 0)
                 return;
             MethodInfo method = typeof(LocalSaveUtility).GetMethod("Inject", BindingFlags.NonPublic | BindingFlags.Static);
-            ES3Reader reader = ES3.StartLoad();
+            ES3Loader reader = ES3.StartLoad();
             foreach (var item in DataInstanceDictionary.Values)
             {
                 Type type = item.GetType();
@@ -73,10 +75,7 @@ namespace Framwork
         {
             string key = typeof(T).Name;
             if (DataInstanceDictionary.TryGetValue(key, out LocalSaveUtility utility))
-            {
-                Debug.LogWarning($"LocalSaveUtility: {key} has injected.");
                 return utility as T;
-            }
             else
             {
                 T t = new T();
@@ -86,10 +85,16 @@ namespace Framwork
             }
         }
 
+        public static void InjectOrRefreshAll()
+        {
+            RefreshHasInjected();
+            InjectAll();
+        }
+
         public static void InjectAll(Action<LocalSaveUtility> injectSingleLocalDataCallback = null, string[] ignoreTypeNames = null)
         {
             MethodInfo method = typeof(LocalSaveUtility).GetMethod("Inject", BindingFlags.NonPublic | BindingFlags.Static);
-            ES3Reader reader = ES3.StartLoad();
+            ES3Loader reader = ES3.StartLoad();
             for (int i = 0; i < AllLocalSaveTypes.Length; i++)
             {
                 Type item = AllLocalSaveTypes[i];
@@ -109,7 +114,7 @@ namespace Framwork
             reader.EndLoad();
         }
 
-        static void Inject<T>(T data, ES3Reader reader = null, T defaultData = null) where T : LocalSaveUtility
+        static void Inject<T>(T data, ES3Loader reader = null, T defaultData = null) where T : LocalSaveUtility
         {
             bool justDispose = false;
             if (reader == null)
@@ -117,22 +122,30 @@ namespace Framwork
                 reader = ES3.StartLoad();
                 justDispose = true;
             }
-            FieldInfo[] fieldInfos = typeof(T).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
-            MethodInfo method = typeof(ES3).GetMethod("TryToLoad");
+            Type dataType = typeof(T);
+            FieldInfo[] fieldInfos = dataType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo method = typeof(ES3Loader).GetMethod("TryToLoad");
             for (int i = 0; i < fieldInfos.Length; i++)
             {
                 FieldInfo item = fieldInfos[i];
+                if (item.Name.StartsWith('<'))
+                    continue;
                 if (item.IsLiteral)
                     continue;
                 if (item.IsDefined(typeof(WaitingFreeToSaveAttribute), true))
                 {
-                    checkUnsafeType(item);
                     WaitingFreeToSaveAttribute attribute = item.GetCustomAttribute(typeof(WaitingFreeToSaveAttribute), true) as WaitingFreeToSaveAttribute;
-                    object[] value = new object[] { reader, attribute.SaveName, null };
-                    if ((bool)method.MakeGenericMethod(item.FieldType).Invoke(null, value))
-                        item.SetValue(data, value[2]);
+                    object[] value = new object[] { $"{dataType.Name}-{attribute.SaveName}", null };
+                    if ((bool)method.MakeGenericMethod(item.FieldType).Invoke(reader, value))
+                    {
+                        data.Initial = false;
+                        item.SetValue(data, value[1]);
+                    }
                     else if (defaultData != null)
+                    {
+                        data.Initial = true;
                         item.SetValue(data, item.GetValue(defaultData));
+                    }
                 }
             }
             if (justDispose)
@@ -140,52 +153,11 @@ namespace Framwork
             data.Init();
         }
 
-        static void checkUnsafeType(FieldInfo item)
-        {
-            Type type = item.FieldType;
-            if (item.IsDefined(typeof(UnsafeAttribute), true))
-                addUnsafeType(type);
-            if (item.IsDefined(typeof(DepthUnsafeAttribute), true))
-                addUnsafeType(type, true);
-        }
-
-        static void addUnsafeType(Type type, bool depth = false)
-        {
-            if (!ES3.UnsafeTypeList.Contains(type))
-                ES3.UnsafeTypeList.Add(type);
-            if (type.IsArray)
-            {
-                Type elementType = type.GetElementType();
-                addUnsafeType(elementType, depth);
-            }
-            else if (type.IsGenericType)
-            {
-                Type[] genericTypes = type.GetGenericArguments();
-                for (int i = 0; i < genericTypes.Length; i++)
-                    addUnsafeType(genericTypes[i], depth);
-            }
-            if (depth)
-            {
-                FieldInfo[] fieldInfos = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
-                for (int i = 0; i < fieldInfos.Length; i++)
-                    checkUnsafeType(fieldInfos[i]);
-            }
-        }
-
-        public static void Save<T>() where T : LocalSaveUtility
-        {
-            string typeName = typeof(T).Name;
-            if (!DataInstanceDictionary.ContainsKey(typeName))
-                throw new Exception($"LocalSaveUtility: {typeName} dont inject.");
-            T t = DataInstanceDictionary[typeName] as T;
-            Save(t);
-        }
-
         public static void SaveAll()
         {
             if (DataInstanceDictionary.Count == 0)
                 return;
-            ES3Writer writer = ES3.StartSave();
+            ES3Saver writer = ES3.StartSave();
             for (int i = 0; i < AllLocalSaveTypes.Length; i++)
             {
                 Type item = AllLocalSaveTypes[i];
@@ -195,7 +167,7 @@ namespace Framwork
             writer.EndSave();
         }
 
-        static void Save<T>(T data, ES3Writer writer = null) where T : LocalSaveUtility
+        static void Save<T>(T data, ES3Saver writer = null) where T : LocalSaveUtility
         {
             bool justDispose = false;
             if (writer == null)
@@ -203,11 +175,14 @@ namespace Framwork
                 writer = ES3.StartSave();
                 justDispose = true;
             }
-            MethodInfo method = typeof(ES3).GetMethod("ToSave");
-            FieldInfo[] fieldInfos = data.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            MethodInfo method = typeof(ES3Saver).GetMethod("Save");
+            Type dataType = data.GetType();
+            FieldInfo[] fieldInfos = dataType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             for (int i = 0; i < fieldInfos.Length; i++)
             {
                 FieldInfo item = fieldInfos[i];
+                if (item.Name.StartsWith('<'))
+                    continue;
                 if (item.IsLiteral)
                     continue;
                 if (item.IsDefined(typeof(WaitingFreeToSaveAttribute), true))
@@ -221,7 +196,7 @@ namespace Framwork
                     }
                     var val = item.GetValue(data);
                     WaitingFreeToSaveAttribute attribute = item.GetCustomAttribute(typeof(WaitingFreeToSaveAttribute), true) as WaitingFreeToSaveAttribute;
-                    method.MakeGenericMethod(type).Invoke(null, new object[] { writer, attribute.SaveName, val });
+                    method.MakeGenericMethod(type).Invoke(writer, new object[] { $"{dataType.Name}-{attribute.SaveName}", val });
                 }
             }
             if (justDispose)
@@ -266,9 +241,6 @@ namespace Framwork
         }
     }
 
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
     public class UnsafeAttribute : Attribute { }
-
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-    public class DepthUnsafeAttribute : Attribute { }
 }

@@ -28,6 +28,8 @@ namespace ES3Internal
 
     public abstract class EncryptionAlgorithm
     {
+        public abstract byte[] Encrypt(byte[] bytes, string password, int bufferSize);
+        public abstract byte[] Decrypt(byte[] bytes, string password, int bufferSize);
         public abstract void Encrypt(Stream input, Stream output, string password, int bufferSize);
         public abstract void Decrypt(Stream input, Stream output, string password, int bufferSize);
 
@@ -45,6 +47,30 @@ namespace ES3Internal
         private const int ivSize = 16;
         private const int keySize = 16;
         private const int pwIterations = 100;
+
+        public override byte[] Encrypt(byte[] bytes, string password, int bufferSize)
+        {
+            using (var input = new MemoryStream(bytes))
+            {
+                using (var output = new MemoryStream())
+                {
+                    Encrypt(input, output, password, bufferSize);
+                    return output.ToArray();
+                }
+            }
+        }
+
+        public override byte[] Decrypt(byte[] bytes, string password, int bufferSize)
+        {
+            using (var input = new MemoryStream(bytes))
+            {
+                using (var output = new MemoryStream())
+                {
+                    Decrypt(input, output, password, bufferSize);
+                    return output.ToArray();
+                }
+            }
+        }
 
         public override void Encrypt(Stream input, Stream output, string password, int bufferSize)
         {
@@ -151,6 +177,7 @@ namespace ES3Internal
         private string password;
         private int bufferSize;
         private EncryptionAlgorithm alg;
+        private bool disposed = false;
 
         public UnbufferedCryptoStream(Stream stream, bool isReadStream, string password, int bufferSize, EncryptionAlgorithm alg) : base()
         {
@@ -167,6 +194,10 @@ namespace ES3Internal
 
         protected override void Dispose(bool disposing)
         {
+            if (disposed)
+                return;
+            disposed = true;
+
             if (!isReadStream)
                 alg.Encrypt(this, stream, password, bufferSize);
             stream.Dispose();

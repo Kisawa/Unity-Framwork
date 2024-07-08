@@ -10,7 +10,9 @@
         Font,
         Swf,
         Misc,
-        Unknown
+        Unknown,
+        Spine,
+        DragoneBones
     }
 
     public enum ObjectType
@@ -32,7 +34,8 @@
         ProgressBar,
         Slider,
         ScrollBar,
-        Tree
+        Tree,
+        Loader3D
     }
 
     public enum AlignType
@@ -71,7 +74,8 @@
         None,
         Both,
         Height,
-        Shrink
+        Shrink,
+        Ellipsis
     }
 
     public enum ScrollType
@@ -289,5 +293,12 @@
         Bottom,
         Left,
         Right
+    }
+
+    public enum FocusRule
+    {
+        NotFocusable,
+        Focusable,
+        NavigationBase
     }
 }

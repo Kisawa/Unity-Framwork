@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("alpha", "time")]
 	public class ES3Type_GradientAlphaKey : ES3Type
 	{
@@ -23,31 +24,8 @@ namespace ES3Types
 
 		public override object Read<T>(ES3Reader reader)
 		{
-			var instance = new UnityEngine.GradientAlphaKey();
-			ReadInto<T>(reader, instance);
-			return instance;
-		}
-
-		public override void ReadInto<T>(ES3Reader reader, object obj)
-		{
-			var instance = (UnityEngine.GradientAlphaKey)obj;
-			string propertyName;
-			while((propertyName = reader.ReadPropertyName()) != null)
-			{
-				switch(propertyName)
-				{
-					
-					case "alpha":
-						instance.alpha = reader.Read<System.Single>(ES3Type_float.Instance);
-						break;
-					case "time":
-						instance.time = reader.Read<System.Single>(ES3Type_float.Instance);
-						break;
-					default:
-						reader.Skip();
-						break;
-				}
-			}
+			return new UnityEngine.GradientAlphaKey(reader.ReadProperty<float>(ES3Type_float.Instance),
+													reader.ReadProperty<float>(ES3Type_float.Instance));
 		}
 	}
 

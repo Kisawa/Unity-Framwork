@@ -3,9 +3,11 @@ using UnityEngine;
 
 namespace ES3Types
 {
-	[ES3PropertiesAttribute("localPosition","localRotation","localScale","parent")]
+	[UnityEngine.Scripting.Preserve]
+	[ES3PropertiesAttribute("localPosition","localRotation","localScale","parent","siblingIndex")]
 	public class ES3Type_Transform : ES3ComponentType
 	{
+        public static int countRead = 0;
 		public static ES3Type Instance = null;
 
 		public ES3Type_Transform() : base(typeof(UnityEngine.Transform))
@@ -16,19 +18,24 @@ namespace ES3Types
 		protected override void WriteComponent(object obj, ES3Writer writer)
 		{
 			var instance = (UnityEngine.Transform)obj;
-
 			writer.WritePropertyByRef("parent", instance.parent);
 			writer.WriteProperty("localPosition", instance.localPosition);
 			writer.WriteProperty("localRotation", instance.localRotation);
 			writer.WriteProperty("localScale", instance.localScale);
-		}
+            writer.WriteProperty("siblingIndex", instance.GetSiblingIndex());
+        }
 
 		protected override void ReadComponent<T>(ES3Reader reader, object obj)
 		{
-			var instance = (Transform)obj;
+            var instance = (Transform)obj;
+
+            var characterController = instance.gameObject.GetComponent<CharacterController>();
+            if (characterController != null)
+                characterController.enabled = false;
+
 			foreach(string propertyName in reader.Properties)
 			{
-				switch(propertyName)
+                switch (propertyName)
 				{
 					case "parent":
 						instance.SetParent(reader.Read<Transform>());
@@ -42,11 +49,17 @@ namespace ES3Types
 					case "localScale":
 						instance.localScale = reader.Read<Vector3>();
 						break;
-					default:
+                    case "siblingIndex":
+                        instance.SetSiblingIndex(reader.Read<int>());
+                        break;
+                    default:
 						reader.Skip();
 						break;
 				}
 			}
-		}
+
+            if (characterController != null)
+                characterController.enabled = false;
+        }
 	}
 }

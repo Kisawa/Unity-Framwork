@@ -11,15 +11,14 @@ public class PlayerData : LocalSaveUtility
     [WaitingFreeToSave("label")]
     string label = "null";
 
-    [Unsafe]
     [WaitingFreeToSave("message")]
     Message[] friends;
 
-    [DepthUnsafe]
     [WaitingFreeToSave("Family")]
     Dictionary<string, Person> Family;
 }
 
+[Unsafe]
 public class Message
 {
     public string Note;
@@ -30,10 +29,10 @@ public class Person
 {
     public string name;
     int age;
-    [Unsafe]
     OtherMessage message;
 }
 
+[Unsafe]
 public class OtherMessage
 {
     public float Height;

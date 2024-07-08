@@ -6,7 +6,8 @@ using ES3Internal;
 
 namespace ES3Types
 {
-internal class ES3ReflectedUnityObjectType : ES3UnityObjectType
+	[UnityEngine.Scripting.Preserve]
+	internal class ES3ReflectedUnityObjectType : ES3UnityObjectType
 	{
 		public ES3ReflectedUnityObjectType(Type type) : base(type)
 		{

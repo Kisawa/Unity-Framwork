@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 
+#if FAIRYGUI_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+
 namespace FairyGUI
 {
     /// <summary>
@@ -35,7 +39,7 @@ namespace FairyGUI
         /// <summary>
         /// 
         /// </summary>
-        public int mouseWheelDelta { get; internal set; }
+        public float mouseWheelDelta { get; internal set; }
 
         /// <summary>
         /// 
@@ -47,8 +51,17 @@ namespace FairyGUI
         /// </summary>
         public int button { get; internal set; }
 
-        internal int clickCount; 
-        internal static bool shiftDown;
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <value></value>
+        public int clickCount { get; internal set; }
+
+        /// <summary>
+        /// Duraion of holding the button. You can read this in touchEnd or click event.
+        /// </summary>
+        /// <value></value>
+        public float holdTime { get; internal set; }
 
         public InputEvent()
         {
@@ -75,7 +88,18 @@ namespace FairyGUI
         /// </summary>
         public bool isDoubleClick
         {
-            get { return clickCount > 1; }
+            get { return clickCount > 1 && button == 0; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool ctrlOrCmd
+        {
+            get
+            {
+                return ctrl || command;
+            }
         }
 
         /// <summary>
@@ -85,14 +109,12 @@ namespace FairyGUI
         {
             get
             {
-                RuntimePlatform rp = Application.platform;
-                bool isMac = (
-                    rp == RuntimePlatform.OSXEditor ||
-                    rp == RuntimePlatform.OSXPlayer);
-
-                return isMac ?
-                    ((modifiers & EventModifiers.Command) != 0) :
-                    ((modifiers & EventModifiers.Control) != 0);
+#if FAIRYGUI_INPUT_SYSTEM
+                Keyboard keyboard = Keyboard.current;
+                return keyboard != null && (keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed);
+#else
+                return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+#endif
             }
         }
 
@@ -103,8 +125,12 @@ namespace FairyGUI
         {
             get
             {
-                //return (modifiers & EventModifiers.Shift) != 0;
-                return shiftDown;
+#if FAIRYGUI_INPUT_SYSTEM
+                Keyboard keyboard = Keyboard.current;
+                return keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+#else
+                return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+#endif
             }
         }
 
@@ -115,7 +141,34 @@ namespace FairyGUI
         {
             get
             {
-                return (modifiers & EventModifiers.Alt) != 0;
+#if FAIRYGUI_INPUT_SYSTEM
+                Keyboard keyboard = Keyboard.current;
+                return keyboard != null && (keyboard.leftAltKey.isPressed || keyboard.rightAltKey.isPressed);
+#else
+                return Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+#endif
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool command
+        {
+            get
+            {
+                // In win, as long as the win key and other keys are pressed at the same time, the getKey will continue to return true. So it can only be shielded.
+                if (Application.platform == RuntimePlatform.OSXPlayer || Application.platform == RuntimePlatform.OSXEditor)
+                {
+#if FAIRYGUI_INPUT_SYSTEM
+                    Keyboard keyboard = Keyboard.current;
+                    return keyboard != null && (keyboard.leftCommandKey.isPressed || keyboard.rightCommandKey.isPressed);
+#else
+                    return Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand);
+#endif
+                }
+                else
+                    return false;
             }
         }
     }

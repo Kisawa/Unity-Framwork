@@ -44,8 +44,14 @@ namespace Framwork
             }
         }
 
-        protected virtual void Start()
+        protected virtual void OnEnable()
         {
+            StartCoroutine(awaitFSM());
+        }
+
+        IEnumerator awaitFSM()
+        {
+            yield return 0;
             if (fsms.Count > 0)
             {
                 foreach (IFsm item in fsms.Values)
@@ -56,6 +62,14 @@ namespace Framwork
                     CurrentFsm = StartFsm;
                 }
             }
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (CurrentFsm != null)
+                CurrentFsm.Leave();
+            CurrentFsm = null;
+            PreFsm = null;
         }
 
         protected virtual void Update()

@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("color", "time")]
 	public class ES3Type_GradientColorKey : ES3Type
 	{
@@ -23,31 +24,8 @@ namespace ES3Types
 
 		public override object Read<T>(ES3Reader reader)
 		{
-			var instance = new UnityEngine.GradientColorKey();
-			ReadInto<T>(reader, instance);
-			return instance;
-		}
-
-		public override void ReadInto<T>(ES3Reader reader, object obj)
-		{
-			var instance = (UnityEngine.GradientColorKey)obj;
-			string propertyName;
-			while((propertyName = reader.ReadPropertyName()) != null)
-			{
-				switch(propertyName)
-				{
-					
-					case "color":
-						instance.color = reader.Read<UnityEngine.Color>(ES3Type_Color.Instance);
-						break;
-					case "time":
-						instance.time = reader.Read<System.Single>(ES3Type_float.Instance);
-						break;
-					default:
-						reader.Skip();
-						break;
-				}
-			}
+			return new UnityEngine.GradientColorKey(reader.ReadProperty<Color>(ES3Type_Color.Instance),
+													reader.ReadProperty<float>(ES3Type_float.Instance));
 		}
 	}
 

@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	[ES3PropertiesAttribute("enabled", "inside", "outside", "enter", "exit", "radiusScale")]
 	public class ES3Type_TriggerModule : ES3Type
 	{

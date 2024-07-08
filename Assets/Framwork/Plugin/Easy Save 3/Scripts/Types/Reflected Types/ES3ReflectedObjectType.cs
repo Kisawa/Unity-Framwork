@@ -3,21 +3,24 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using ES3Internal;
+using Framwork;
 
 namespace ES3Types
 {
+	[UnityEngine.Scripting.Preserve]
 	internal class ES3ReflectedObjectType : ES3ObjectType
 	{
 		public ES3ReflectedObjectType(Type type) : base(type)
 		{
             isReflectedType = true;
-			GetMembers(!Framwork.ES3.UnsafeTypeList.Contains(type));
+			bool safe = !type.IsDefined(typeof(UnsafeAttribute), true);
+			GetMembers(safe);
 		}
 
 		protected override void WriteObject(object obj, ES3Writer writer)
 		{
 			WriteProperties(obj, writer);
-		}
+        }
 
 		protected override object ReadObject<T>(ES3Reader reader)
 		{
